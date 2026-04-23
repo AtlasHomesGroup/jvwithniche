@@ -17,7 +17,7 @@ export function SiteFooter() {
 
   return (
     <footer className="bg-brand-navy">
-      <div className="mx-auto w-full max-w-[1200px] px-6 pt-12 pb-6 sm:px-4 sm:pt-10">
+      <div className="mx-auto w-full max-w-[1200px] px-6 pt-12 pb-6 sm:px-4">
         {/* Centered logo */}
         <div className="mb-10 flex justify-center">
           <Link href="/" aria-label="JV With Niche home">
@@ -31,11 +31,11 @@ export function SiteFooter() {
           </Link>
         </div>
 
-        {/* Two equal columns */}
-        <div className="grid grid-cols-2 gap-8 sm:grid-cols-1 sm:gap-10">
+        {/* Two equal columns — stacked on mobile, side-by-side from md up */}
+        <div className="grid grid-cols-1 gap-10 md:grid-cols-2 md:gap-8">
           {/* Column 1 — pitch + contact */}
-          <div className="flex flex-col gap-3 text-[13px] leading-relaxed text-white/70 sm:items-center sm:text-center">
-            <p className="max-w-sm">
+          <div className="flex flex-col gap-3 text-[13px] leading-relaxed text-white/70">
+            <p>
               Submit a distressed-property JV opportunity to the Niche
               acquisitions team — we partner on capital, seller conversations,
               paperwork, and closing.
@@ -52,12 +52,18 @@ export function SiteFooter() {
             >
               816-310-1161
             </a>
+            <a
+              href="sms:+18163101161"
+              className="transition-colors hover:text-brand-orange"
+            >
+              Send Text
+            </a>
             <span className="text-white/65">3620 Arrowhead Ave</span>
             <span className="text-white/65">Independence, MO 64057</span>
           </div>
 
           {/* Column 2 — family links + in-site links */}
-          <div className="flex flex-col sm:items-center sm:text-center">
+          <div className="flex flex-col">
             <h3 className="mb-4 text-[11px] font-bold uppercase tracking-[0.14em] text-white/40">
               The Niche Family
             </h3>
@@ -90,7 +96,7 @@ export function SiteFooter() {
 
         {/* Bottom bar */}
         <div className="mt-10 border-t border-white/10 pt-5">
-          <p className="text-[12px] text-white/50 sm:text-center">
+          <p className="text-[12px] text-white/50">
             © {year} Niche Solutions. All rights reserved.
           </p>
         </div>
