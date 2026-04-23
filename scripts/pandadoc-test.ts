@@ -123,42 +123,43 @@ async function waitUntilReady(docId: string, attempts = 10): Promise<string> {
   throw new Error("Document did not leave uploaded state in time");
 }
 
+async function fetchDocumentDetails(docId: string, apiKey: string) {
+  const res = await fetch(`${PANDADOC_API_BASE}/documents/${docId}/details`, {
+    headers: {
+      Authorization: `API-Key ${apiKey}`,
+      Accept: "application/json",
+    },
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`Document details failed: ${res.status} ${body}`);
+  }
+  return res.json() as Promise<{
+    id: string;
+    tokens: Array<{ name: string; value?: string }>;
+    fields: Array<{
+      uuid: string;
+      name: string;
+      value: unknown;
+      assigned_to?: { role?: string; first_name?: string; last_name?: string };
+    }>;
+  }>;
+}
+
 async function main() {
   const apiKey = process.env.PANDADOC_API_KEY;
   const templateId = process.env.PANDADOC_TEMPLATE_ID;
   if (!apiKey) throw new Error("PANDADOC_API_KEY not set");
   if (!templateId) throw new Error("PANDADOC_TEMPLATE_ID not set");
 
-  console.log("▶ Inspecting template", templateId);
-  const details = await fetchTemplateDetails(templateId, apiKey);
-  console.log(`  Name: ${details.name}`);
-  console.log(`  Roles: ${details.roles.map((r) => r.name).join(", ") || "(none)"}`);
-  console.log(`  Tokens: ${details.tokens.length} detected`);
-  for (const t of details.tokens) console.log(`    • ${t.name}`);
-  console.log(`  Fields: ${details.fields.length}`);
-  for (const f of details.fields) {
-    console.log(`    • ${f.name}  (assigned to "${f.assigned_to?.role ?? "?"}")`);
-  }
+  // Template details endpoint is permission-gated on sandbox tier; we
+  // instead inspect the DOCUMENT we create, which always works.
 
   const data = sample();
-  const expected = buildMergeTokens(data).map((t) => t.name);
-  const templateTokens = new Set(details.tokens.map((t) => t.name));
-  const ourUnused = expected.filter((n) => !templateTokens.has(n));
-  const templateMissing = [...templateTokens].filter((n) => !expected.includes(n));
+  const sentTokens = buildMergeTokens(data);
+  console.log(`▶ Sending ${sentTokens.length} candidate tokens to PandaDoc`);
 
-  console.log("\n▶ Token mapping check");
-  if (ourUnused.length) {
-    console.log(`  Sent by code but not on template (harmless): ${ourUnused.join(", ")}`);
-  }
-  if (templateMissing.length) {
-    console.log(
-      `  ⚠️  Template has tokens our code doesn't send: ${templateMissing.join(", ")}`,
-    );
-  } else {
-    console.log("  ✓ Every token on the template will be populated.");
-  }
-
-  console.log("\n▶ Creating document");
+  console.log("\n▶ Creating document from template", templateId);
   const doc = await createDocument({
     name: buildDocumentName(data),
     template_uuid: templateId,
@@ -171,26 +172,52 @@ async function main() {
   const ready = await waitUntilReady(doc.id);
   console.log(`  Ready. Status: ${ready}`);
 
-  const jvPartnerEmail =
-    buildRecipients(data).find((r) => r.role === "JV Partner")?.email ?? "";
+  console.log("\n▶ Inspecting what PandaDoc actually applied");
+  const details = await fetchDocumentDetails(doc.id, apiKey);
 
-  console.log("\n▶ Sending document (silent)");
-  const sent = await sendDocument(doc.id, { silent: true });
-  console.log(`  Sent. Status: ${sent.status}`);
+  const sentNames = new Set(sentTokens.map((t) => t.name));
+  const appliedTokens = details.tokens ?? [];
 
-  console.log("\n▶ Opening embed session for JV Partner");
-  const session = await createEmbedSession(doc.id, jvPartnerEmail, 600);
-  const signUrl = `https://app.pandadoc.com/s/${session.id}`;
-  console.log(`  Session: ${session.id}`);
-  console.log(`  Expires: ${session.expires_at}`);
-  console.log(`  Sign URL: ${signUrl}`);
+  console.log(`  Template exposed ${appliedTokens.length} tokens on the doc:`);
+  for (const t of appliedTokens) {
+    const matched = sentNames.has(t.name);
+    const mark = matched ? "✓" : "✗";
+    const valPreview = (t.value ?? "")
+      .toString()
+      .slice(0, 60)
+      .replace(/\s+/g, " ");
+    console.log(`    ${mark} ${t.name} = "${valPreview}"`);
+  }
 
-  const fullDoc = await getDocument(doc.id);
-  console.log("\n▶ Final document state");
-  console.log(`  id: ${fullDoc.id}`);
-  console.log(`  name: ${fullDoc.name}`);
-  console.log(`  status: ${fullDoc.status}`);
-  console.log("\n✓ All API calls succeeded. Open the sign URL above in a browser to visually verify merge values.");
+  const appliedNames = new Set(appliedTokens.map((t) => t.name));
+  const sentButUnused = sentTokens
+    .map((t) => t.name)
+    .filter((n) => !appliedNames.has(n));
+  if (sentButUnused.length) {
+    console.log(
+      `\n  ℹ️  Sent but not on template (harmless): ${sentButUnused
+        .slice(0, 20)
+        .join(", ")}${sentButUnused.length > 20 ? ", …" : ""}`,
+    );
+  }
+
+  console.log(`\n  Fields (${details.fields.length}):`);
+  for (const f of details.fields) {
+    const role = f.assigned_to?.role ?? "?";
+    const who = [f.assigned_to?.first_name, f.assigned_to?.last_name]
+      .filter(Boolean)
+      .join(" ") || "unassigned";
+    console.log(`    • ${f.name}  (role: "${role}", signer: ${who})`);
+  }
+
+  // Clean up the test doc so the user's workspace stays tidy.
+  console.log("\n▶ Cleanup: deleting test document");
+  const del = await fetch(`${PANDADOC_API_BASE}/documents/${doc.id}`, {
+    method: "DELETE",
+    headers: { Authorization: `API-Key ${apiKey}` },
+  });
+  console.log(`  Delete: HTTP ${del.status}`);
+  console.log("\n✓ Test complete.");
 }
 
 main().catch((err) => {

@@ -3,44 +3,48 @@ import type { Recipient, TokenValue } from "./client";
 
 /**
  * Role names MUST match the role names defined in the PandaDoc template.
- * The current template uses "JV Partner" for the submitter and
- * "Niche Acquisitions" for Michael / the closer side.
+ * The current "NICHE JV CONTRACT" template uses these two roles.
  */
 export const JV_PARTNER_ROLE = "JV Partner" as const;
 export const NICHE_ROLE = "Niche Acquisitions" as const;
 
 /**
- * Map a completed submission's form data to the PandaDoc merge-field tokens.
+ * Map a completed submission's form data to PandaDoc merge-field tokens.
  *
- * Token names mirror the {{snake_case}} tokens in the JV contract template.
- * We send a superset — if the template doesn't reference a token, PandaDoc
- * silently ignores it, so we can keep extra tokens around for flexibility
- * without breaking anything.
+ * Token names MUST match the variable names configured in the PandaDoc
+ * template (case- and whitespace-sensitive). The current NICHE JV CONTRACT
+ * template uses a mix of "Title Case With Spaces" and "Group.DotNotation"
+ * variable names, which is what the first block below targets.
+ *
+ * We additionally send snake_case aliases so the code stays resilient to
+ * legal updating the template: if the template switches to snake_case
+ * later, submissions keep working without a code change. PandaDoc silently
+ * ignores unreferenced tokens.
  */
 export function buildMergeTokens(data: FullFormData): TokenValue[] {
-  const jvFullName = join([data.firstName, data.lastName]);
-  const homeownerFullName = join([
-    data.prospectFirstName,
-    data.prospectLastName,
-  ]);
+  const firstName = (data.firstName ?? "").trim();
+  const lastName = (data.lastName ?? "").trim();
+  const fullName = [firstName, lastName].filter(Boolean).join(" ");
 
-  const jvMailingAddress = join(
-    [data.address, data.city, data.state, data.zip].filter(Boolean),
-    ", ",
-  );
-  const propertyFullAddress = join(
-    [
-      data.propertyStreet,
-      data.propertyCity,
-      data.propertyState,
-      data.propertyZip,
-    ].filter(Boolean),
-    ", ",
-  );
+  const prospectFirst = (data.prospectFirstName ?? "").trim();
+  const prospectLast = (data.prospectLastName ?? "").trim();
+  const prospectFull = [prospectFirst, prospectLast].filter(Boolean).join(" ");
 
-  // Pick the right auction date based on deal type — only pre-foreclosure,
-  // NOD, and surplus funds have one. Others stay blank (template says "if
-  // applicable").
+  const jvMailingAddress = [data.address, data.city, data.state, data.zip]
+    .map((s) => (s ?? "").trim())
+    .filter(Boolean)
+    .join(", ");
+
+  const propertyFullAddress = [
+    data.propertyStreet,
+    data.propertyCity,
+    data.propertyState,
+    data.propertyZip,
+  ]
+    .map((s) => (s ?? "").trim())
+    .filter(Boolean)
+    .join(", ");
+
   const auctionDate =
     data.dealType === "Pre-foreclosure" || data.dealType === "NOD"
       ? formatIsoDate(data.foreclosure_auctionDate)
@@ -48,34 +52,43 @@ export function buildMergeTokens(data: FullFormData): TokenValue[] {
         ? formatIsoDate(data.sf_auctionDate)
         : "";
 
-  const tokens: Record<string, string> = {
-    // ── Contract variables used by the current JV template ──────────────
-    agreement_date: humanDate(new Date()),
+  const today = humanDate(new Date());
+  const dealType = data.dealType ?? "";
 
-    // JV Partner (Party B)
-    jv_partner_full_name: jvFullName,
-    jv_partner_first_name: data.firstName ?? "",
-    jv_partner_last_name: data.lastName ?? "",
+  const tokens: Record<string, string> = {
+    // ── Match the current template's variable names exactly ─────────────
+    "JV Partner.FirstName": firstName,
+    "JV Partner.LastName": lastName,
+    "JV Partner.Email": data.email ?? "",
+    "JV Partner.Phone": data.phoneE164 ?? "",
+    "Property Address": propertyFullAddress,
+    "Homeowner First Name": prospectFirst,
+    "Homeowner Last Name": prospectLast,
+    "Deal Type": dealType,
+    "Auction Date": auctionDate,
+    // Candidates for the effective-date variable at the top of page 1 —
+    // not sure which one is configured, so we send all three. Unmatched
+    // ones are dropped by PandaDoc.
+    "Effective Date": today,
+    "Agreement Date": today,
+    "Effective_Date": today,
+
+    // ── Backwards-compatible snake_case aliases (harmless if unused) ────
+    agreement_date: today,
+    jv_partner_full_name: fullName,
+    jv_partner_first_name: firstName,
+    jv_partner_last_name: lastName,
     jv_partner_email: data.email ?? "",
     jv_partner_phone: data.phoneE164 ?? "",
     jv_partner_address: jvMailingAddress,
-    jv_partner_city: data.city ?? "",
-    jv_partner_state: data.state ?? "",
-    jv_partner_zip: data.zip ?? "",
-
-    // Deal information (section 1 of the contract)
     property_address: propertyFullAddress,
-    property_street: data.propertyStreet ?? "",
-    property_city: data.propertyCity ?? "",
-    property_state: data.propertyState ?? "",
-    property_zip: data.propertyZip ?? "",
-    homeowner_full_name: homeownerFullName,
-    homeowner_first_name: data.prospectFirstName ?? "",
-    homeowner_last_name: data.prospectLastName ?? "",
-    deal_type: data.dealType ?? "",
+    homeowner_full_name: prospectFull,
+    homeowner_first_name: prospectFirst,
+    homeowner_last_name: prospectLast,
+    deal_type: dealType,
     auction_date: auctionDate,
 
-    // Supplementary context (not currently in template — available if added)
+    // ── Supplementary context the template doesn't reference today ──────
     occupancy: data.occupancy ?? "",
     lender: data.lender ?? "",
     foreclosing_trustee: data.foreclosingTrustee ?? "",
@@ -86,11 +99,6 @@ export function buildMergeTokens(data: FullFormData): TokenValue[] {
   return Object.entries(tokens).map(([name, value]) => ({ name, value }));
 }
 
-/**
- * Build the recipient list for a PandaDoc document. The JV Partner signs
- * first via the embedded iframe; the Niche side receives an email link and
- * signs afterward.
- */
 export function buildRecipients(data: FullFormData): Recipient[] {
   const nicheName = process.env.NICHE_SIGNER_NAME ?? "Michael Franke";
   const nicheEmail =
@@ -116,10 +124,6 @@ export function buildRecipients(data: FullFormData): Recipient[] {
   ];
 }
 
-/**
- * Human-readable document name shown in the PandaDoc admin UI so Michael
- * can scan his inbox without opening each doc.
- */
 export function buildDocumentName(data: FullFormData): string {
   const prop = data.propertyStreet?.trim() || "property TBD";
   const setter =
@@ -129,13 +133,6 @@ export function buildDocumentName(data: FullFormData): string {
   return `JV With Niche · ${setter} · ${prop}`;
 }
 
-function join(parts: (string | undefined | null)[], sep = " "): string {
-  return parts
-    .filter((p): p is string => typeof p === "string" && p.trim().length > 0)
-    .join(sep);
-}
-
-/** Format ISO date string (YYYY-MM-DD) as "April 23, 2026". */
 function formatIsoDate(iso: string | undefined): string {
   if (!iso) return "";
   const [y, m, d] = iso.split("-").map(Number);
