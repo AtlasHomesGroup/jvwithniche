@@ -22,11 +22,11 @@ export function SiteFooter() {
           <div className="col-span-6 flex flex-col sm:col-span-1 md:col-span-2">
             <Link href="/" className="mb-2 inline-block">
               <Image
-                src="/app-logo/logo.svg"
+                src="/app-logo/niche-logo.png"
                 alt="Niche"
-                width={80}
-                height={80}
-                style={{ width: "auto", height: "80px" }}
+                width={486}
+                height={218}
+                style={{ width: "auto", height: "64px" }}
               />
             </Link>
             <p className="mt-2 max-w-md text-[14px] leading-relaxed text-white/65">

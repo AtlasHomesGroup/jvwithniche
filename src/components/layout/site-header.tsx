@@ -23,12 +23,12 @@ export function SiteHeader() {
       <div className="mx-auto flex h-16 max-w-[1200px] items-center justify-between px-6 sm:h-14 sm:px-4">
         <Link href="/" className="flex-shrink-0" aria-label="JV With Niche home">
           <Image
-            src="/app-logo/logo.svg"
+            src="/app-logo/niche-orange-icon.png"
             alt="Niche"
-            width={44}
-            height={44}
+            width={337}
+            height={291}
             priority
-            style={{ width: "auto", height: "44px" }}
+            style={{ width: "auto", height: "40px" }}
           />
         </Link>
 

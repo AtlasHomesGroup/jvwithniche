@@ -107,4 +107,10 @@ Ported from the sibling `niche_crm_website` project. The live palette lives in [
 | `--brand-text-muted` | `#666666` | Secondary copy |
 | `--brand-navy-light` | `#D5E8F0` | Inline code, secondary chips |
 
-Logo: [`public/app-logo/logo.svg`](./public/app-logo/logo.svg) — the circular "NICHE" mark (navy ring, orange center, white letterforms). Favicon: [`src/app/icon.ico`](./src/app/icon.ico). Header + footer components are in [`src/components/layout/`](./src/components/layout/) and mirror the CRM site — fixed 64px header with scroll-triggered shadow, navy footer with orange accent links.
+Logos:
+
+- [`public/app-logo/niche-orange-icon.png`](./public/app-logo/niche-orange-icon.png) — compact orange circular mark. Used in the site header and as the favicon / Apple touch icon.
+- [`public/app-logo/niche-logo.png`](./public/app-logo/niche-logo.png) — combo mark + "NICHE" wordmark. Used in the site footer.
+- [`public/app-logo/niche-text-logo.png`](./public/app-logo/niche-text-logo.png) — wordmark only. Available for places that need horizontal branding without the mark.
+
+Favicon + Apple touch icon: [`src/app/icon.png`](./src/app/icon.png) and [`src/app/apple-icon.png`](./src/app/apple-icon.png) — Next.js App Router picks these up automatically. Header + footer components live in [`src/components/layout/`](./src/components/layout/) — fixed 64px header with scroll-triggered shadow, navy footer with orange accent links.
