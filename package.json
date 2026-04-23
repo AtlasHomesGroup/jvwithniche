@@ -12,7 +12,8 @@
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "pandadoc:ping": "node --env-file=.env.local --import tsx scripts/pandadoc-ping.ts"
+    "pandadoc:ping": "node --env-file=.env.local --import tsx scripts/pandadoc-ping.ts",
+    "pandadoc:test": "node --env-file=.env.local --import tsx scripts/pandadoc-test.ts"
   },
   "dependencies": {
     "@googlemaps/js-api-loader": "^2.0.2",
