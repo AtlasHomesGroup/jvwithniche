@@ -78,7 +78,7 @@ const optionalE164Phone = z
   .transform((v) => v ?? "");
 
 /* ─────────────────────────────────────────────────────────────
-   Step 1 — Setter
+   Step 1 — Setter (strict, for step validation)
    ───────────────────────────────────────────────────────────── */
 
 export const setterSchema = z
@@ -114,14 +114,12 @@ export const setterSchema = z
 export type SetterData = z.infer<typeof setterSchema>;
 
 /* ─────────────────────────────────────────────────────────────
-   Step 2 — Prospect
-   (lender + foreclosingTrustee required only if dealType is
-   Pre-foreclosure or NOD — enforced at the combined schema level)
+   Step 2 — Prospect (strict, for step validation)
    ───────────────────────────────────────────────────────────── */
 
 export const prospectSchema = z.object({
-  firstName: nonEmptyString("Prospect first name"),
-  lastName: nonEmptyString("Prospect last name"),
+  prospectFirstName: nonEmptyString("Prospect first name"),
+  prospectLastName: nonEmptyString("Prospect last name"),
   propertyStreet: nonEmptyString("Property street"),
   propertyCity: nonEmptyString("Property city"),
   propertyState: nonEmptyString("Property state"),
@@ -147,7 +145,7 @@ export const dealTypeSchema = z.object({
 export type DealTypeData = z.infer<typeof dealTypeSchema>;
 
 /* ─────────────────────────────────────────────────────────────
-   Step 4 — Universal narrative
+   Step 4 — Universal narrative (strict)
    ───────────────────────────────────────────────────────────── */
 
 export const narrativeSchema = z
@@ -178,37 +176,42 @@ export const narrativeSchema = z
 export type NarrativeData = z.infer<typeof narrativeSchema>;
 
 /* ─────────────────────────────────────────────────────────────
-   Step 5 — Deal-type-specific questions (per-variant schemas)
+   Step 5 — Deal-type-specific (strict, per variant)
+   All fields are namespaced by variant prefix so they can
+   coexist in the flat composite used for draft autosave.
    ───────────────────────────────────────────────────────────── */
 
-// Pre-foreclosure / NOD share the same script
+// Pre-foreclosure / NOD share the same script — prefix "foreclosure_"
 export const foreclosureSchema = z
   .object({
-    auctionDate: z.string().trim().default(""),
-    auctionTime: z.string().trim().default(""),
-    onlyOwnerOnTitle: z.enum(YES_NO_UNKNOWN),
-    otherOwners: z.string().trim().default(""),
-    recentMortgageStatement: z.enum(YES_NO_UNKNOWN),
-    multipleMortgagesOrHaf: minChars(1, "Mortgages / HAF detail"),
-    lenderBackendPromise: z.enum(YES_NO_UNKNOWN),
-    urgencyScale: z
+    foreclosure_auctionDate: z.string().trim().default(""),
+    foreclosure_auctionTime: z.string().trim().default(""),
+    foreclosure_onlyOwnerOnTitle: z.enum(YES_NO_UNKNOWN),
+    foreclosure_otherOwners: z.string().trim().default(""),
+    foreclosure_recentMortgageStatement: z.enum(YES_NO_UNKNOWN),
+    foreclosure_multipleMortgagesOrHaf: minChars(1, "Mortgages / HAF detail"),
+    foreclosure_lenderBackendPromise: z.enum(YES_NO_UNKNOWN),
+    foreclosure_urgencyScale: z
       .number({ message: "Select 1 through 10" })
       .int()
       .min(1, "Select 1 through 10")
       .max(10, "Select 1 through 10"),
-    paymentsMissed: z
+    foreclosure_paymentsMissed: z
       .number({ message: "Enter a number" })
       .int()
       .min(0, "Must be zero or more"),
-    hardshipReason: minChars(40, "Hardship reason"),
-    magicWand: minChars(40, "Magic wand outcome"),
+    foreclosure_hardshipReason: minChars(40, "Hardship reason"),
+    foreclosure_magicWand: minChars(40, "Magic wand outcome"),
   })
   .superRefine((data, ctx) => {
-    if (data.onlyOwnerOnTitle === "No" && !data.otherOwners.trim()) {
+    if (
+      data.foreclosure_onlyOwnerOnTitle === "No" &&
+      !data.foreclosure_otherOwners.trim()
+    ) {
       ctx.addIssue({
         code: "custom",
         message: "Who else is on title?",
-        path: ["otherOwners"],
+        path: ["foreclosure_otherOwners"],
       });
     }
   });
@@ -216,174 +219,194 @@ export type ForeclosureData = z.infer<typeof foreclosureSchema>;
 
 export const probateSchema = z
   .object({
-    deceasedFullName: nonEmptyString("Deceased full name"),
-    dateOfDeath: z.string().trim().default(""),
-    isProbateOpened: z.enum(YES_NO_UNKNOWN),
-    executorName: z.string().trim().default(""),
-    executorContact: z.string().trim().default(""),
-    probateCourt: z.string().trim().default(""),
-    willExists: z.enum(YES_NO_UNKNOWN),
-    multipleHeirs: z.enum(YES_NO_UNKNOWN),
-    heirsDetail: z.string().trim().default(""),
-    outstandingLiens: nonEmptyString("Outstanding liens detail"),
+    probate_deceasedFullName: nonEmptyString("Deceased full name"),
+    probate_dateOfDeath: z.string().trim().default(""),
+    probate_isProbateOpened: z.enum(YES_NO_UNKNOWN),
+    probate_executorName: z.string().trim().default(""),
+    probate_executorContact: z.string().trim().default(""),
+    probate_probateCourt: z.string().trim().default(""),
+    probate_willExists: z.enum(YES_NO_UNKNOWN),
+    probate_multipleHeirs: z.enum(YES_NO_UNKNOWN),
+    probate_heirsDetail: z.string().trim().default(""),
+    probate_outstandingLiens: nonEmptyString("Outstanding liens detail"),
   })
   .superRefine((data, ctx) => {
-    if (data.isProbateOpened === "Yes") {
-      if (!data.executorName.trim())
+    if (data.probate_isProbateOpened === "Yes") {
+      if (!data.probate_executorName.trim())
         ctx.addIssue({
           code: "custom",
           message: "Executor name is required",
-          path: ["executorName"],
+          path: ["probate_executorName"],
         });
-      if (!data.executorContact.trim())
+      if (!data.probate_executorContact.trim())
         ctx.addIssue({
           code: "custom",
           message: "Executor contact is required",
-          path: ["executorContact"],
+          path: ["probate_executorContact"],
         });
-      if (!data.probateCourt.trim())
+      if (!data.probate_probateCourt.trim())
         ctx.addIssue({
           code: "custom",
           message: "Probate court / county is required",
-          path: ["probateCourt"],
+          path: ["probate_probateCourt"],
         });
     }
-    if (data.multipleHeirs === "Yes" && !data.heirsDetail.trim()) {
+    if (
+      data.probate_multipleHeirs === "Yes" &&
+      !data.probate_heirsDetail.trim()
+    ) {
       ctx.addIssue({
         code: "custom",
         message: "How many heirs, and are they in agreement about selling?",
-        path: ["heirsDetail"],
+        path: ["probate_heirsDetail"],
       });
     }
   });
 export type ProbateData = z.infer<typeof probateSchema>;
 
 export const preProbateSchema = z.object({
-  deceasedFullName: nonEmptyString("Deceased full name"),
-  dateOfDeath: z.string().trim().default(""),
-  relationshipToDeceased: nonEmptyString("Your relationship"),
-  likelyHeir: nonEmptyString("Likely heir / next of kin"),
-  probateInitiated: z.enum(YES_NO_UNKNOWN),
-  propertyOccupancy: z.enum(PREPROBATE_OCCUPANCY_OPTIONS),
-  outstandingLiens: nonEmptyString("Outstanding liens detail"),
+  preprobate_deceasedFullName: nonEmptyString("Deceased full name"),
+  preprobate_dateOfDeath: z.string().trim().default(""),
+  preprobate_relationshipToDeceased: nonEmptyString("Your relationship"),
+  preprobate_likelyHeir: nonEmptyString("Likely heir / next of kin"),
+  preprobate_probateInitiated: z.enum(YES_NO_UNKNOWN),
+  preprobate_propertyOccupancy: z.enum(PREPROBATE_OCCUPANCY_OPTIONS),
+  preprobate_outstandingLiens: nonEmptyString("Outstanding liens detail"),
 });
 export type PreProbateData = z.infer<typeof preProbateSchema>;
 
 export const surplusFundsSchema = z.object({
-  auctionDate: nonEmptyString("Auction / foreclosure sale date"),
-  estimatedSurplusAmount: z
+  sf_auctionDate: nonEmptyString("Auction / foreclosure sale date"),
+  sf_estimatedSurplusAmount: z
     .number({ message: "Enter a dollar amount" })
     .nonnegative("Must be zero or more"),
-  formerOwnerNotified: z.enum(YES_NO_UNKNOWN),
-  otherApproachedFormerOwner: z.enum(YES_NO_UNKNOWN),
-  countyJurisdiction: nonEmptyString("County / jurisdiction"),
-  claimTimeline: z.string().trim().default(""),
+  sf_formerOwnerNotified: z.enum(YES_NO_UNKNOWN),
+  sf_otherApproachedFormerOwner: z.enum(YES_NO_UNKNOWN),
+  sf_countyJurisdiction: nonEmptyString("County / jurisdiction"),
+  sf_claimTimeline: z.string().trim().default(""),
 });
 export type SurplusFundsData = z.infer<typeof surplusFundsSchema>;
 
 export const divorceSchema = z
   .object({
-    bothSpousesOnTitle: z.enum(YES_NO_UNKNOWN),
-    divorceFinalized: z.enum(YES_NO_INPROGRESS),
-    bothPartiesAgreeToSell: z.enum(YES_NO_UNKNOWN),
-    courtOrderExists: z.enum(YES_NO_UNKNOWN),
-    courtOrderDescription: z.string().trim().default(""),
-    primaryContactSpouse: nonEmptyString("Primary contact spouse"),
+    divorce_bothSpousesOnTitle: z.enum(YES_NO_UNKNOWN),
+    divorce_divorceFinalized: z.enum(YES_NO_INPROGRESS),
+    divorce_bothPartiesAgreeToSell: z.enum(YES_NO_UNKNOWN),
+    divorce_courtOrderExists: z.enum(YES_NO_UNKNOWN),
+    divorce_courtOrderDescription: z.string().trim().default(""),
+    divorce_primaryContactSpouse: nonEmptyString("Primary contact spouse"),
   })
   .superRefine((data, ctx) => {
     if (
-      data.courtOrderExists === "Yes" &&
-      !data.courtOrderDescription.trim()
+      data.divorce_courtOrderExists === "Yes" &&
+      !data.divorce_courtOrderDescription.trim()
     ) {
       ctx.addIssue({
         code: "custom",
         message: "Briefly describe the court order",
-        path: ["courtOrderDescription"],
+        path: ["divorce_courtOrderDescription"],
       });
     }
   });
 export type DivorceData = z.infer<typeof divorceSchema>;
 
 /* ─────────────────────────────────────────────────────────────
-   Combined form schema — one flat shape with conditional refines
-   covering every cross-section dependency.
+   Combined flat form schema — used for draft autosave and as
+   react-hook-form's Field type. Everything relaxed so partial
+   drafts pass; strict per-section schemas run before advancing
+   a step, and server re-runs them at final submit.
    ───────────────────────────────────────────────────────────── */
 
-// The "flat" base omits superRefines because .merge/.extend work only on
-// z.object, not on ZodEffects. We re-apply refinements on the combined form.
 const setterBase = z.object({
-  firstName: nonEmptyString("First name"),
-  lastName: nonEmptyString("Last name"),
-  address: nonEmptyString("Address"),
-  city: nonEmptyString("City"),
-  state: nonEmptyString("State"),
-  zip: nonEmptyString("Zip"),
-  country: z.string().trim().min(1).default("US"),
-  email: z.string().email("Enter a valid email"),
-  phoneE164: e164Phone,
-  whatsappConsent: z.boolean(),
-  isNicheCommunityMember: z.boolean(),
-  communityEmail: z.string().trim().default(""),
+  firstName: z.string().default(""),
+  lastName: z.string().default(""),
+  address: z.string().default(""),
+  city: z.string().default(""),
+  state: z.string().default(""),
+  zip: z.string().default(""),
+  country: z.string().default("US"),
+  email: z.string().default(""),
+  phoneE164: z.string().default(""),
+  whatsappConsent: z.boolean().default(false),
+  isNicheCommunityMember: z.boolean().default(false),
+  communityEmail: z.string().default(""),
 });
 
-const prospectBase = prospectSchema;
+const prospectBase = z.object({
+  prospectFirstName: z.string().default(""),
+  prospectLastName: z.string().default(""),
+  propertyStreet: z.string().default(""),
+  propertyCity: z.string().default(""),
+  propertyState: z.string().default(""),
+  propertyZip: z.string().default(""),
+  propertyCountry: z.string().default("US"),
+  prospectEmail: z.string().default(""),
+  prospectPhoneE164: z.string().default(""),
+  occupancy: z.enum(OCCUPANCY_OPTIONS).optional(),
+  lender: z.string().default(""),
+  foreclosingTrustee: z.string().default(""),
+});
+
+const dealTypeBase = z.object({
+  dealType: z.enum(DEAL_TYPES).optional(),
+});
 
 const narrativeBase = z.object({
-  challenge: minChars(40, "Challenge"),
-  situationSummary: minChars(40, "Situation summary"),
-  equityEstimateReasoning: nonEmptyString("Equity estimate"),
-  assistanceRequested: z
-    .array(z.enum(ASSISTANCE_OPTIONS))
-    .min(1, "Select at least one assistance option"),
-  assistanceOther: z.string().trim().default(""),
-  potentialReasoning: minChars(40, "Why this deal has potential"),
-  additionalInfo: z.string().trim().default(""),
+  challenge: z.string().default(""),
+  situationSummary: z.string().default(""),
+  equityEstimateReasoning: z.string().default(""),
+  assistanceRequested: z.array(z.enum(ASSISTANCE_OPTIONS)).default([]),
+  assistanceOther: z.string().default(""),
+  potentialReasoning: z.string().default(""),
+  additionalInfo: z.string().default(""),
 });
 
 const foreclosureBase = z.object({
-  auctionDate: z.string().trim().default(""),
-  auctionTime: z.string().trim().default(""),
-  onlyOwnerOnTitle: z.enum(YES_NO_UNKNOWN).optional(),
-  otherOwners: z.string().trim().default(""),
-  recentMortgageStatement: z.enum(YES_NO_UNKNOWN).optional(),
-  multipleMortgagesOrHaf: z.string().trim().default(""),
-  lenderBackendPromise: z.enum(YES_NO_UNKNOWN).optional(),
-  urgencyScale: z.number().int().min(1).max(10).optional(),
-  paymentsMissed: z.number().int().min(0).optional(),
-  hardshipReason: z.string().trim().default(""),
-  magicWand: z.string().trim().default(""),
+  foreclosure_auctionDate: z.string().default(""),
+  foreclosure_auctionTime: z.string().default(""),
+  foreclosure_onlyOwnerOnTitle: z.enum(YES_NO_UNKNOWN).optional(),
+  foreclosure_otherOwners: z.string().default(""),
+  foreclosure_recentMortgageStatement: z.enum(YES_NO_UNKNOWN).optional(),
+  foreclosure_multipleMortgagesOrHaf: z.string().default(""),
+  foreclosure_lenderBackendPromise: z.enum(YES_NO_UNKNOWN).optional(),
+  foreclosure_urgencyScale: z.number().int().min(1).max(10).optional(),
+  foreclosure_paymentsMissed: z.number().int().min(0).optional(),
+  foreclosure_hardshipReason: z.string().default(""),
+  foreclosure_magicWand: z.string().default(""),
 });
 
 const probateBase = z.object({
-  deceasedFullName: z.string().trim().default(""),
-  dateOfDeath: z.string().trim().default(""),
-  isProbateOpened: z.enum(YES_NO_UNKNOWN).optional(),
-  executorName: z.string().trim().default(""),
-  executorContact: z.string().trim().default(""),
-  probateCourt: z.string().trim().default(""),
-  willExists: z.enum(YES_NO_UNKNOWN).optional(),
-  multipleHeirs: z.enum(YES_NO_UNKNOWN).optional(),
-  heirsDetail: z.string().trim().default(""),
-  outstandingLiens: z.string().trim().default(""),
+  probate_deceasedFullName: z.string().default(""),
+  probate_dateOfDeath: z.string().default(""),
+  probate_isProbateOpened: z.enum(YES_NO_UNKNOWN).optional(),
+  probate_executorName: z.string().default(""),
+  probate_executorContact: z.string().default(""),
+  probate_probateCourt: z.string().default(""),
+  probate_willExists: z.enum(YES_NO_UNKNOWN).optional(),
+  probate_multipleHeirs: z.enum(YES_NO_UNKNOWN).optional(),
+  probate_heirsDetail: z.string().default(""),
+  probate_outstandingLiens: z.string().default(""),
 });
 
 const preProbateBase = z.object({
-  preprobate_relationshipToDeceased: z.string().trim().default(""),
-  preprobate_likelyHeir: z.string().trim().default(""),
+  preprobate_deceasedFullName: z.string().default(""),
+  preprobate_dateOfDeath: z.string().default(""),
+  preprobate_relationshipToDeceased: z.string().default(""),
+  preprobate_likelyHeir: z.string().default(""),
   preprobate_probateInitiated: z.enum(YES_NO_UNKNOWN).optional(),
   preprobate_propertyOccupancy: z
     .enum(PREPROBATE_OCCUPANCY_OPTIONS)
     .optional(),
-  preprobate_outstandingLiens: z.string().trim().default(""),
+  preprobate_outstandingLiens: z.string().default(""),
 });
 
 const surplusFundsBase = z.object({
-  sf_auctionDate: z.string().trim().default(""),
+  sf_auctionDate: z.string().default(""),
   sf_estimatedSurplusAmount: z.number().nonnegative().optional(),
   sf_formerOwnerNotified: z.enum(YES_NO_UNKNOWN).optional(),
   sf_otherApproachedFormerOwner: z.enum(YES_NO_UNKNOWN).optional(),
-  sf_countyJurisdiction: z.string().trim().default(""),
-  sf_claimTimeline: z.string().trim().default(""),
+  sf_countyJurisdiction: z.string().default(""),
+  sf_claimTimeline: z.string().default(""),
 });
 
 const divorceBase = z.object({
@@ -391,19 +414,13 @@ const divorceBase = z.object({
   divorce_divorceFinalized: z.enum(YES_NO_INPROGRESS).optional(),
   divorce_bothPartiesAgreeToSell: z.enum(YES_NO_UNKNOWN).optional(),
   divorce_courtOrderExists: z.enum(YES_NO_UNKNOWN).optional(),
-  divorce_courtOrderDescription: z.string().trim().default(""),
-  divorce_primaryContactSpouse: z.string().trim().default(""),
+  divorce_courtOrderDescription: z.string().default(""),
+  divorce_primaryContactSpouse: z.string().default(""),
 });
 
-/**
- * The full flat shape used for draft persistence and final submission.
- * Draft rows may hold partial data, hence most deal-type-specific fields
- * allow empty defaults; the final submit endpoint re-runs a strict
- * variant-specific schema based on dealType.
- */
 export const fullFormSchema = setterBase
   .merge(prospectBase)
-  .merge(z.object({ dealType: z.enum(DEAL_TYPES) }))
+  .merge(dealTypeBase)
   .merge(narrativeBase)
   .merge(foreclosureBase)
   .merge(probateBase)
@@ -411,13 +428,18 @@ export const fullFormSchema = setterBase
   .merge(surplusFundsBase)
   .merge(divorceBase);
 
-export type FullFormData = z.infer<typeof fullFormSchema>;
+/** Input type — what the form state looks like BEFORE zod applies defaults.
+ *  Everything is optional because the draft can be partial mid-fill. */
+export type FullFormInput = z.input<typeof fullFormSchema>;
 
-/**
- * Maps a dealType to the correct strict per-variant schema used at final
- * submit time. Server-side uses this to re-validate all deal-type-specific
- * fields before persisting a submission.
- */
+/** Output type — what a validated, fully-completed submission looks like.
+ *  Server-side handlers receive this. */
+export type FullFormOutput = z.output<typeof fullFormSchema>;
+
+/** Alias the UI uses — we work with input-typed values throughout the form
+ *  and only narrow to output on final submit. */
+export type FullFormData = FullFormInput;
+
 export const variantSchemaByDealType = {
   "Pre-foreclosure": foreclosureSchema,
   NOD: foreclosureSchema,
@@ -427,16 +449,135 @@ export const variantSchemaByDealType = {
   Divorce: divorceSchema,
 } as const;
 
-/**
- * Steps in the order they appear in the UI. Matches the spec.
- */
+/* ─────────────────────────────────────────────────────────────
+   Step metadata — drives the UI stepper + validation gates
+   ───────────────────────────────────────────────────────────── */
+
 export const FORM_STEPS = [
   { id: "setter", label: "About you" },
   { id: "prospect", label: "Prospect & property" },
   { id: "dealType", label: "Deal type" },
   { id: "narrative", label: "Deal narrative" },
-  { id: "dealTypeSpecific", label: "Discovery questions" },
-  { id: "submit", label: "Review & sign" },
+  { id: "discovery", label: "Discovery questions" },
+  { id: "review", label: "Review & sign" },
 ] as const;
 
 export type FormStepId = (typeof FORM_STEPS)[number]["id"];
+
+/** Per-step lists of field names — used by react-hook-form's trigger() to
+ *  validate only the current step before advancing. */
+export const STEP_FIELDS: Record<FormStepId, ReadonlyArray<keyof FullFormData>> = {
+  setter: [
+    "firstName",
+    "lastName",
+    "address",
+    "city",
+    "state",
+    "zip",
+    "country",
+    "email",
+    "phoneE164",
+    "whatsappConsent",
+    "isNicheCommunityMember",
+    "communityEmail",
+  ],
+  prospect: [
+    "prospectFirstName",
+    "prospectLastName",
+    "propertyStreet",
+    "propertyCity",
+    "propertyState",
+    "propertyZip",
+    "propertyCountry",
+    "prospectEmail",
+    "prospectPhoneE164",
+    "occupancy",
+    "lender",
+    "foreclosingTrustee",
+  ],
+  dealType: ["dealType"],
+  narrative: [
+    "challenge",
+    "situationSummary",
+    "equityEstimateReasoning",
+    "assistanceRequested",
+    "assistanceOther",
+    "potentialReasoning",
+    "additionalInfo",
+  ],
+  discovery: [], // populated dynamically from dealType + STEP_FIELDS_BY_DEAL_TYPE
+  review: [],
+};
+
+export const DISCOVERY_FIELDS_BY_DEAL_TYPE: Record<
+  DealType,
+  ReadonlyArray<keyof FullFormData>
+> = {
+  "Pre-foreclosure": [
+    "foreclosure_auctionDate",
+    "foreclosure_auctionTime",
+    "foreclosure_onlyOwnerOnTitle",
+    "foreclosure_otherOwners",
+    "foreclosure_recentMortgageStatement",
+    "foreclosure_multipleMortgagesOrHaf",
+    "foreclosure_lenderBackendPromise",
+    "foreclosure_urgencyScale",
+    "foreclosure_paymentsMissed",
+    "foreclosure_hardshipReason",
+    "foreclosure_magicWand",
+  ],
+  NOD: [
+    "foreclosure_auctionDate",
+    "foreclosure_auctionTime",
+    "foreclosure_onlyOwnerOnTitle",
+    "foreclosure_otherOwners",
+    "foreclosure_recentMortgageStatement",
+    "foreclosure_multipleMortgagesOrHaf",
+    "foreclosure_lenderBackendPromise",
+    "foreclosure_urgencyScale",
+    "foreclosure_paymentsMissed",
+    "foreclosure_hardshipReason",
+    "foreclosure_magicWand",
+  ],
+  Probate: [
+    "probate_deceasedFullName",
+    "probate_dateOfDeath",
+    "probate_isProbateOpened",
+    "probate_executorName",
+    "probate_executorContact",
+    "probate_probateCourt",
+    "probate_willExists",
+    "probate_multipleHeirs",
+    "probate_heirsDetail",
+    "probate_outstandingLiens",
+  ],
+  "Pre-probate": [
+    "preprobate_deceasedFullName",
+    "preprobate_dateOfDeath",
+    "preprobate_relationshipToDeceased",
+    "preprobate_likelyHeir",
+    "preprobate_probateInitiated",
+    "preprobate_propertyOccupancy",
+    "preprobate_outstandingLiens",
+  ],
+  "Surplus Funds": [
+    "sf_auctionDate",
+    "sf_estimatedSurplusAmount",
+    "sf_formerOwnerNotified",
+    "sf_otherApproachedFormerOwner",
+    "sf_countyJurisdiction",
+    "sf_claimTimeline",
+  ],
+  Divorce: [
+    "divorce_bothSpousesOnTitle",
+    "divorce_divorceFinalized",
+    "divorce_bothPartiesAgreeToSell",
+    "divorce_courtOrderExists",
+    "divorce_courtOrderDescription",
+    "divorce_primaryContactSpouse",
+  ],
+};
+
+/** Default values used when mounting a fresh form. */
+export const DEFAULT_FORM_VALUES: FullFormData =
+  fullFormSchema.parse({}) as FullFormData;
