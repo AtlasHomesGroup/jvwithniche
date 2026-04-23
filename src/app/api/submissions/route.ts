@@ -16,6 +16,17 @@ import {
   variantSchemaByDealType,
   type FullFormData,
 } from "@/lib/form-schema";
+import {
+  createDocument,
+  hasTemplate as hasPandadocTemplate,
+  sendDocument,
+  PandaDocApiError,
+} from "@/lib/pandadoc/client";
+import {
+  buildDocumentName,
+  buildMergeTokens,
+  buildRecipients,
+} from "@/lib/pandadoc/merge-fields";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -110,7 +121,54 @@ export async function POST(req: Request) {
       );
     }
 
-    // All good — mark the submission as awaiting signature.
+    // Attempt to create the PandaDoc document up front so the /sign page
+    // can open an embed session immediately on load. If PandaDoc isn't
+    // configured yet (no template ID), we still advance the submission to
+    // awaiting_signature — the sign page will show a friendly "waiting
+    // for template setup" message.
+    let esignDocumentId: string | null = null;
+    let esignProvider: "pandadoc" | "jotform" | null = null;
+    let esignError: string | null = null;
+
+    if (hasPandadocTemplate()) {
+      try {
+        const doc = await createDocument({
+          name: buildDocumentName(formData),
+          template_uuid: process.env.PANDADOC_TEMPLATE_ID!,
+          recipients: buildRecipients(formData),
+          tokens: buildMergeTokens(formData),
+          metadata: {
+            submission_id: draft.id,
+            deal_type: formData.dealType ?? "",
+          },
+        });
+        // Poll briefly until the doc leaves "document.uploaded" — sending
+        // a doc still in "uploaded" returns 400. In practice this takes
+        // well under a second from a template; cap at 6 short tries.
+        await sendDocument(doc.id, { silent: true }).catch(async (err) => {
+          if (err instanceof PandaDocApiError && err.status === 400) {
+            // give PandaDoc a moment to finish processing the doc
+            await new Promise((r) => setTimeout(r, 1200));
+            await sendDocument(doc.id, { silent: true });
+          } else {
+            throw err;
+          }
+        });
+        esignDocumentId = doc.id;
+        esignProvider = "pandadoc";
+      } catch (err) {
+        // Non-fatal: we still want the submission persisted so the user
+        // doesn't lose their data. The /sign page will show the error.
+        console.error("[submit] pandadoc create/send failed", err);
+        esignError =
+          err instanceof PandaDocApiError
+            ? `PandaDoc ${err.status}`
+            : err instanceof Error
+              ? err.message
+              : "unknown";
+      }
+    }
+
     const now = new Date();
     const [updated] = await db
       .update(submissions)
@@ -118,6 +176,8 @@ export async function POST(req: Request) {
         status: "awaiting_signature",
         updatedAt: now,
         lastActivityAt: now,
+        esignProvider,
+        esignDocumentId,
       })
       .where(eq(submissions.id, draft.id))
       .returning();
@@ -127,6 +187,11 @@ export async function POST(req: Request) {
       submissionId: updated.id,
       next: `/sign/${updated.id}`,
       recaptchaScore: captcha.score,
+      esign: {
+        configured: hasPandadocTemplate(),
+        documentCreated: !!esignDocumentId,
+        error: esignError,
+      },
     });
   } catch (err) {
     console.error("[submit] failed", err);
