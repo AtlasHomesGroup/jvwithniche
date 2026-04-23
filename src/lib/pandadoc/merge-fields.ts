@@ -1,26 +1,34 @@
 import type { FullFormData } from "@/lib/form-schema";
 import type { Recipient, TokenValue } from "./client";
 
-export const SETTER_ROLE = "Setter" as const;
+/**
+ * Role names MUST match the role names defined in the PandaDoc template.
+ * The current template uses "JV Partner" for the submitter and
+ * "Niche Acquisitions" for Michael / the closer side.
+ */
+export const JV_PARTNER_ROLE = "JV Partner" as const;
 export const NICHE_ROLE = "Niche Acquisitions" as const;
 
 /**
  * Map a completed submission's form data to the PandaDoc merge-field tokens.
- * Token keys here MUST match the {{TokenName}} tokens defined in the PandaDoc
- * template. If the user names tokens differently on their template, update
- * this file — it's the single source of truth for the field mapping.
  *
- * Convention: camelCase token names, grouped by logical section. PandaDoc
- * accepts any string; camelCase is just our convention to keep it tidy.
+ * Token names mirror the {{snake_case}} tokens in the JV contract template.
+ * We send a superset — if the template doesn't reference a token, PandaDoc
+ * silently ignores it, so we can keep extra tokens around for flexibility
+ * without breaking anything.
  */
 export function buildMergeTokens(data: FullFormData): TokenValue[] {
-  const setterFullName = join([data.firstName, data.lastName]);
-  const prospectFullName = join([data.prospectFirstName, data.prospectLastName]);
-  const setterAddressLine = join(
+  const jvFullName = join([data.firstName, data.lastName]);
+  const homeownerFullName = join([
+    data.prospectFirstName,
+    data.prospectLastName,
+  ]);
+
+  const jvMailingAddress = join(
     [data.address, data.city, data.state, data.zip].filter(Boolean),
     ", ",
   );
-  const propertyAddressLine = join(
+  const propertyFullAddress = join(
     [
       data.propertyStreet,
       data.propertyCity,
@@ -30,64 +38,61 @@ export function buildMergeTokens(data: FullFormData): TokenValue[] {
     ", ",
   );
 
-  const today = new Date();
-  const submissionDate = today.toISOString().slice(0, 10); // YYYY-MM-DD
+  // Pick the right auction date based on deal type — only pre-foreclosure,
+  // NOD, and surplus funds have one. Others stay blank (template says "if
+  // applicable").
+  const auctionDate =
+    data.dealType === "Pre-foreclosure" || data.dealType === "NOD"
+      ? formatIsoDate(data.foreclosure_auctionDate)
+      : data.dealType === "Surplus Funds"
+        ? formatIsoDate(data.sf_auctionDate)
+        : "";
 
   const tokens: Record<string, string> = {
-    // Setter
-    SetterFirstName: data.firstName ?? "",
-    SetterLastName: data.lastName ?? "",
-    SetterFullName: setterFullName,
-    SetterEmail: data.email ?? "",
-    SetterPhone: data.phoneE164 ?? "",
-    SetterAddress: setterAddressLine,
-    SetterCity: data.city ?? "",
-    SetterState: data.state ?? "",
-    SetterZip: data.zip ?? "",
-    SetterCountry: data.country ?? "",
-    SetterNicheMember: data.isNicheCommunityMember ? "Yes" : "No",
-    SetterCommunityEmail: data.communityEmail ?? "",
+    // ── Contract variables used by the current JV template ──────────────
+    agreement_date: humanDate(new Date()),
 
-    // Prospect & property
-    ProspectFirstName: data.prospectFirstName ?? "",
-    ProspectLastName: data.prospectLastName ?? "",
-    ProspectFullName: prospectFullName,
-    ProspectEmail: data.prospectEmail ?? "",
-    ProspectPhone: data.prospectPhoneE164 ?? "",
-    PropertyStreet: data.propertyStreet ?? "",
-    PropertyCity: data.propertyCity ?? "",
-    PropertyState: data.propertyState ?? "",
-    PropertyZip: data.propertyZip ?? "",
-    PropertyAddress: propertyAddressLine,
-    PropertyOccupancy: data.occupancy ?? "",
-    Lender: data.lender ?? "",
-    ForeclosingTrustee: data.foreclosingTrustee ?? "",
+    // JV Partner (Party B)
+    jv_partner_full_name: jvFullName,
+    jv_partner_first_name: data.firstName ?? "",
+    jv_partner_last_name: data.lastName ?? "",
+    jv_partner_email: data.email ?? "",
+    jv_partner_phone: data.phoneE164 ?? "",
+    jv_partner_address: jvMailingAddress,
+    jv_partner_city: data.city ?? "",
+    jv_partner_state: data.state ?? "",
+    jv_partner_zip: data.zip ?? "",
 
-    // Deal
-    DealType: data.dealType ?? "",
-    SubmissionDate: submissionDate,
+    // Deal information (section 1 of the contract)
+    property_address: propertyFullAddress,
+    property_street: data.propertyStreet ?? "",
+    property_city: data.propertyCity ?? "",
+    property_state: data.propertyState ?? "",
+    property_zip: data.propertyZip ?? "",
+    homeowner_full_name: homeownerFullName,
+    homeowner_first_name: data.prospectFirstName ?? "",
+    homeowner_last_name: data.prospectLastName ?? "",
+    deal_type: data.dealType ?? "",
+    auction_date: auctionDate,
 
-    // Narrative summary (short forms; full narrative is in the CRM payload)
-    Challenge: truncate(data.challenge ?? "", 500),
-    SituationSummary: truncate(data.situationSummary ?? "", 500),
-    EquityEstimate: truncate(data.equityEstimateReasoning ?? "", 500),
-    AssistanceRequested: (data.assistanceRequested ?? []).join(", "),
-    PotentialReasoning: truncate(data.potentialReasoning ?? "", 500),
-    AdditionalInfo: truncate(data.additionalInfo ?? "", 500),
+    // Supplementary context (not currently in template — available if added)
+    occupancy: data.occupancy ?? "",
+    lender: data.lender ?? "",
+    foreclosing_trustee: data.foreclosingTrustee ?? "",
+    jv_partner_niche_member: data.isNicheCommunityMember ? "Yes" : "No",
+    jv_partner_community_email: data.communityEmail ?? "",
   };
 
   return Object.entries(tokens).map(([name, value]) => ({ name, value }));
 }
 
 /**
- * Build the recipient list for a PandaDoc document. The setter signs first,
- * followed by the Niche side. Both emails must be real for the signing flow
- * to work; the submitter signs via the embedded iframe (we send silent=true
- * on sendDocument so PandaDoc doesn't email them the link), the Niche side
- * receives an email-based request.
+ * Build the recipient list for a PandaDoc document. The JV Partner signs
+ * first via the embedded iframe; the Niche side receives an email link and
+ * signs afterward.
  */
 export function buildRecipients(data: FullFormData): Recipient[] {
-  const nicheName = process.env.NICHE_SIGNER_NAME ?? "Niche Acquisitions";
+  const nicheName = process.env.NICHE_SIGNER_NAME ?? "Michael Franke";
   const nicheEmail =
     process.env.NICHE_SIGNER_EMAIL ?? "michael@nichesolutions.ai";
 
@@ -98,7 +103,7 @@ export function buildRecipients(data: FullFormData): Recipient[] {
       email: data.email ?? "",
       first_name: data.firstName ?? "",
       last_name: data.lastName ?? "",
-      role: SETTER_ROLE,
+      role: JV_PARTNER_ROLE,
       signing_order: 1,
     },
     {
@@ -112,15 +117,15 @@ export function buildRecipients(data: FullFormData): Recipient[] {
 }
 
 /**
- * Produce a short, human-readable document name so it's easy to find the
- * right one in the PandaDoc admin UI later.
+ * Human-readable document name shown in the PandaDoc admin UI so Michael
+ * can scan his inbox without opening each doc.
  */
 export function buildDocumentName(data: FullFormData): string {
   const prop = data.propertyStreet?.trim() || "property TBD";
   const setter =
     data.firstName && data.lastName
       ? `${data.firstName} ${data.lastName}`
-      : "setter TBD";
+      : "partner TBD";
   return `JV With Niche · ${setter} · ${prop}`;
 }
 
@@ -130,6 +135,21 @@ function join(parts: (string | undefined | null)[], sep = " "): string {
     .join(sep);
 }
 
-function truncate(s: string, max: number): string {
-  return s.length <= max ? s : s.slice(0, max - 1).trimEnd() + "…";
+/** Format ISO date string (YYYY-MM-DD) as "April 23, 2026". */
+function formatIsoDate(iso: string | undefined): string {
+  if (!iso) return "";
+  const [y, m, d] = iso.split("-").map(Number);
+  if (!y || !m || !d) return "";
+  const date = new Date(Date.UTC(y, m - 1, d));
+  if (isNaN(date.getTime())) return "";
+  return humanDate(date);
+}
+
+function humanDate(date: Date): string {
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    timeZone: "UTC",
+  });
 }
