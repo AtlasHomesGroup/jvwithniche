@@ -76,7 +76,7 @@ vercel.json              Cron schedule for CRM retry + stall alerts
 
 - [x] **M1 — Foundation:** Next.js scaffold, Tailwind + shadcn tokens, Drizzle schema for all 4 tables, base routes and API stubs, Niche-branded layout with real logo + palette ported from `nichecrm.ai`, env template, cron schedule.
 - [x] **M2 — Intake form:** 6-step conditional form (setter → prospect → deal type → narrative → variant-specific discovery → review), 800 ms debounced draft autosave to Neon, reCAPTCHA v3 + honeypot on submit, Google Places autocomplete against the new Places API REST endpoint, per-section + cross-section validation client and server side. Final submit flips status to `awaiting_signature` and redirects to `/sign/[id]` for the M3 e-sign hand-off.
-- [ ] **M3 — E-signature:** PandaDoc template merge + embedded signing, webhook handler, signed-PDF storage, stalled-draft alerts, 7-day auto-delete.
+- [x] **M3 — E-signature:** PandaDoc document creation from template on submit (merge tokens + two-signer recipient list), embedded iframe signing at `/sign/[id]` with postMessage completion hooks, HMAC-verified `/api/webhooks/pandadoc` webhook, signed PDFs archived to Vercel Blob at `submissions/{id}/jv-agreement__pandadoc__{ts}.pdf`, stalled-draft alert + 7-day auto-delete via `/api/cron/stall-alerts` (Bearer-auth, Resend-powered branded emails).
 - [ ] **M4 — CRM + WhatsApp:** Outbound CRM webhook with retry queue, WhatsApp group auto-create + welcome message, failure alerts.
 - [ ] **M5 — Unique return link:** Attachments (Vercel Blob), append-only notes, secondary update webhook to CRM, rate limits.
 - [ ] **M6 — Admin view:** Password auth, submissions list + filters, detail view, manual push-to-CRM, delete, resend-link.
