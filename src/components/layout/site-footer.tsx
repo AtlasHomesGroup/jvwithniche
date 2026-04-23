@@ -4,16 +4,11 @@ import { ArrowUpRight, Mail, MapPin, Phone } from "lucide-react";
 
 type FamilyLink = { label: string; href: string };
 
-const externalFamilyLinks: FamilyLink[] = [
+const familyLinks: FamilyLink[] = [
   { label: "Niche Community", href: "https://www.getnichenow.com/" },
   { label: "Niche Data", href: "https://nichedata.ai/" },
   { label: "Niche CRM", href: "https://www.nichecrm.ai/" },
   { label: "Niche Acquisitions", href: "https://www.nicheacquisition.com/" },
-];
-
-const internalFamilyLinks: FamilyLink[] = [
-  { label: "How it works", href: "/#how-it-works" },
-  { label: "Start a JV", href: "/submit" },
 ];
 
 export function SiteFooter() {
@@ -33,10 +28,10 @@ export function SiteFooter() {
       />
 
       <div className="relative mx-auto w-full max-w-[1200px] px-6 pt-16 pb-8 sm:px-4 sm:pt-12">
-        {/* Top grid — brand/contact on the left, links on the right */}
-        <div className="grid grid-cols-1 gap-12 md:grid-cols-12 md:gap-10">
-          {/* Brand + pitch + contact */}
-          <div className="md:col-span-7">
+        {/* 3-column grid: brand/pitch · family links · contact */}
+        <div className="grid grid-cols-1 gap-12 md:grid-cols-12 md:gap-8">
+          {/* Column 1 — logo + pitch */}
+          <div className="md:col-span-5">
             <Link href="/" className="inline-block" aria-label="JV With Niche home">
               <Image
                 src="/app-logo/niche-logo.png"
@@ -46,15 +41,44 @@ export function SiteFooter() {
                 style={{ width: "auto", height: "56px" }}
               />
             </Link>
-
             <p className="mt-6 max-w-md text-[14px] leading-relaxed text-white/70">
               Submit a distressed-property JV opportunity to the Niche
               acquisitions team — we partner on capital, seller conversations,
               paperwork, and closing.
             </p>
+          </div>
 
-            {/* Icon-chip contact list */}
-            <ul className="mt-8 flex flex-col gap-3 text-[13px]">
+          {/* Column 2 — The Niche Family */}
+          <div className="md:col-span-3">
+            <h3 className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/40">
+              The Niche Family
+            </h3>
+            <ul className="mt-5 flex flex-col gap-3">
+              {familyLinks.map((link) => (
+                <li key={link.label}>
+                  <a
+                    href={link.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group inline-flex items-center gap-1.5 text-[14px] font-medium text-brand-orange transition-colors hover:text-white"
+                  >
+                    {link.label}
+                    <ArrowUpRight
+                      className="h-3.5 w-3.5 -translate-x-1 opacity-0 transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100"
+                      aria-hidden="true"
+                    />
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Column 3 — Contact */}
+          <div className="md:col-span-4">
+            <h3 className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/40">
+              Contact
+            </h3>
+            <ul className="mt-5 flex flex-col gap-3 text-[13px]">
               <li>
                 <a
                   href="mailto:support@nichecrm.ai"
@@ -89,50 +113,6 @@ export function SiteFooter() {
                   </span>
                 </span>
               </li>
-            </ul>
-          </div>
-
-          {/* Links — right-aligned on desktop */}
-          <div className="md:col-span-5 md:text-right">
-            <h3 className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/40">
-              The Niche Family
-            </h3>
-
-            {/* 4 external family links — orange with hover arrow */}
-            <ul className="mt-5 flex flex-col gap-3 md:items-end">
-              {externalFamilyLinks.map((link) => (
-                <li key={link.label}>
-                  <a
-                    href={link.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="group inline-flex items-center gap-1.5 text-[14px] font-medium text-brand-orange transition-colors hover:text-white"
-                  >
-                    {link.label}
-                    <ArrowUpRight
-                      className="h-3.5 w-3.5 -translate-x-1 opacity-0 transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100"
-                      aria-hidden="true"
-                    />
-                  </a>
-                </li>
-              ))}
-            </ul>
-
-            {/* Subtle divider between external and internal link groups */}
-            <div className="mt-6 h-px w-12 bg-white/10 md:ml-auto" aria-hidden="true" />
-
-            {/* 2 internal links — white-ish, muted hover to orange */}
-            <ul className="mt-5 flex flex-col gap-3 md:items-end">
-              {internalFamilyLinks.map((link) => (
-                <li key={link.label}>
-                  <Link
-                    href={link.href}
-                    className="text-[14px] font-medium text-white/75 transition-colors hover:text-brand-orange"
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
             </ul>
           </div>
         </div>
