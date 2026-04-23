@@ -75,7 +75,7 @@ vercel.json              Cron schedule for CRM retry + stall alerts
 ## Milestone status
 
 - [x] **M1 — Foundation:** Next.js scaffold, Tailwind + shadcn tokens, Drizzle schema for all 4 tables, base routes and API stubs, Niche-branded layout with real logo + palette ported from `nichecrm.ai`, env template, cron schedule.
-- [ ] **M2 — Intake form:** Conditional multi-section form, draft autosave, reCAPTCHA v3 + honeypot, Google Places autocomplete, full client + server validation.
+- [x] **M2 — Intake form:** 6-step conditional form (setter → prospect → deal type → narrative → variant-specific discovery → review), 800 ms debounced draft autosave to Neon, reCAPTCHA v3 + honeypot on submit, Google Places autocomplete against the new Places API REST endpoint, per-section + cross-section validation client and server side. Final submit flips status to `awaiting_signature` and redirects to `/sign/[id]` for the M3 e-sign hand-off.
 - [ ] **M3 — E-signature:** PandaDoc template merge + embedded signing, webhook handler, signed-PDF storage, stalled-draft alerts, 7-day auto-delete.
 - [ ] **M4 — CRM + WhatsApp:** Outbound CRM webhook with retry queue, WhatsApp group auto-create + welcome message, failure alerts.
 - [ ] **M5 — Unique return link:** Attachments (Vercel Blob), append-only notes, secondary update webhook to CRM, rate limits.
