@@ -1,5 +1,6 @@
 "use client";
 
+import { Fragment } from "react";
 import { CheckCircle2 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -15,80 +16,84 @@ export function StepProgress({
   const currentIndex = FORM_STEPS.findIndex((s) => s.id === currentStep);
 
   return (
-    <div className="mb-8">
-      {/* Mobile: compact step X of Y */}
-      <div className="mb-3 flex items-center justify-between text-[12px] text-brand-text-muted md:hidden">
-        <span className="font-semibold uppercase tracking-wider">
-          Step {currentIndex + 1} of {FORM_STEPS.length}
-        </span>
-        <span className="font-medium text-brand-navy">
-          {FORM_STEPS[currentIndex]?.label}
-        </span>
+    <div className="mb-10">
+      {/* Mobile: compact "Step X of Y" with progress bar */}
+      <div className="md:hidden">
+        <div className="mb-3 flex items-center justify-between text-[12px] text-brand-text-muted">
+          <span className="font-semibold uppercase tracking-wider">
+            Step {currentIndex + 1} of {FORM_STEPS.length}
+          </span>
+          <span className="font-medium text-brand-navy">
+            {FORM_STEPS[currentIndex]?.label}
+          </span>
+        </div>
+        <div className="h-1 w-full overflow-hidden rounded-full bg-border">
+          <div
+            className="h-full bg-brand-orange transition-all duration-500"
+            style={{
+              width: `${((currentIndex + 1) / FORM_STEPS.length) * 100}%`,
+            }}
+          />
+        </div>
       </div>
 
-      {/* Desktop: full stepper */}
-      <ol className="hidden items-center md:flex">
+      {/* Desktop: evenly-spaced circles with labels centered beneath */}
+      <ol className="hidden items-start md:flex">
         {FORM_STEPS.map((step, i) => {
-          const isComplete = completedSteps.has(step.id);
           const isCurrent = step.id === currentStep;
-          const isPast = i < currentIndex;
+          const isComplete = completedSteps.has(step.id) || i < currentIndex;
+          const connectorComplete = i < currentIndex;
+
           return (
-            <li
-              key={step.id}
-              className={cn(
-                "flex flex-1 items-center",
-                i === FORM_STEPS.length - 1 && "flex-none",
-              )}
-            >
-              <div className="flex items-center gap-2">
+            <Fragment key={step.id}>
+              <li className="flex w-24 flex-shrink-0 flex-col items-center gap-2">
                 <span
                   className={cn(
-                    "flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full border text-[12px] font-semibold transition-colors",
+                    "relative z-10 flex h-7 w-7 items-center justify-center rounded-full border bg-white text-[12px] font-semibold transition-colors",
                     isCurrent &&
                       "border-brand-navy bg-brand-navy text-white",
-                    !isCurrent && (isComplete || isPast)
-                      ? "border-brand-orange bg-brand-orange text-white"
-                      : !isCurrent &&
-                        "border-border bg-white text-brand-text-muted",
+                    !isCurrent &&
+                      isComplete &&
+                      "border-brand-orange bg-brand-orange text-white",
+                    !isCurrent &&
+                      !isComplete &&
+                      "border-border text-brand-text-muted",
                   )}
                 >
-                  {isComplete || isPast ? (
-                    <CheckCircle2 className="h-4 w-4" strokeWidth={2.5} />
+                  {isComplete && !isCurrent ? (
+                    <CheckCircle2
+                      className="h-4 w-4"
+                      strokeWidth={2.5}
+                      aria-hidden="true"
+                    />
                   ) : (
                     i + 1
                   )}
                 </span>
                 <span
                   className={cn(
-                    "whitespace-nowrap text-[12px] font-semibold uppercase tracking-wider",
-                    isCurrent ? "text-brand-navy" : "text-brand-text-muted",
+                    "text-center text-[11px] font-semibold uppercase leading-tight tracking-wider",
+                    isCurrent
+                      ? "text-brand-navy"
+                      : "text-brand-text-muted",
                   )}
                 >
                   {step.label}
                 </span>
-              </div>
+              </li>
               {i < FORM_STEPS.length - 1 && (
                 <div
                   className={cn(
-                    "mx-3 h-px flex-1",
-                    isComplete || isPast ? "bg-brand-orange" : "bg-border",
+                    "mt-[13px] h-px min-w-[16px] flex-1 transition-colors",
+                    connectorComplete ? "bg-brand-orange" : "bg-border",
                   )}
+                  aria-hidden="true"
                 />
               )}
-            </li>
+            </Fragment>
           );
         })}
       </ol>
-
-      {/* Mobile bar */}
-      <div className="h-1 w-full overflow-hidden rounded-full bg-border md:hidden">
-        <div
-          className="h-full bg-brand-orange transition-all duration-500"
-          style={{
-            width: `${((currentIndex + 1) / FORM_STEPS.length) * 100}%`,
-          }}
-        />
-      </div>
     </div>
   );
 }
