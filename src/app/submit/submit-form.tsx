@@ -21,6 +21,8 @@ import {
 import { StepSetter } from "./steps/step-setter";
 import { StepProspect } from "./steps/step-prospect";
 import { StepDealType } from "./steps/step-deal-type";
+import { StepNarrative } from "./steps/step-narrative";
+import { StepDiscovery } from "./steps/step-discovery";
 import { StepPlaceholder } from "./steps/step-placeholder";
 
 export function SubmitForm({
@@ -98,20 +100,8 @@ export function SubmitForm({
           {currentStep === "setter" && <StepSetter />}
           {currentStep === "prospect" && <StepProspect />}
           {currentStep === "dealType" && <StepDealType />}
-          {currentStep === "narrative" && (
-            <StepPlaceholder
-              stepNumber={4}
-              stepTitle="Deal narrative"
-              milestone="M2 commit 4"
-            />
-          )}
-          {currentStep === "discovery" && (
-            <StepPlaceholder
-              stepNumber={5}
-              stepTitle="Discovery questions"
-              milestone="M2 commit 4"
-            />
-          )}
+          {currentStep === "narrative" && <StepNarrative />}
+          {currentStep === "discovery" && <StepDiscovery />}
           {currentStep === "review" && (
             <StepPlaceholder
               stepNumber={6}
