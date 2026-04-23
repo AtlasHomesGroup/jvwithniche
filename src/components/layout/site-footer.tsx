@@ -1,15 +1,15 @@
 import Image from "next/image";
 import Link from "next/link";
 
-const familyLinks = [
-  { label: "Niche Data", href: "https://nichedata.ai/", accent: true },
-  { label: "Niche CRM", href: "https://nichecrm.ai/", accent: true },
-  { label: "Niche Community", href: "https://www.getnichenow.com/", accent: true },
-];
+type FamilyLink = { label: string; href: string; accent: boolean };
 
-const supportLinks = [
-  { label: "How it works", href: "/#how-it-works" },
-  { label: "Start a JV", href: "/submit" },
+const familyLinks: FamilyLink[] = [
+  { label: "Niche Community", href: "https://www.getnichenow.com/", accent: true },
+  { label: "Niche Data", href: "https://nichedata.ai/", accent: true },
+  { label: "Niche CRM", href: "https://www.nichecrm.ai/", accent: true },
+  { label: "Niche Acquisitions", href: "https://www.nicheacquisition.com/", accent: true },
+  { label: "How it works", href: "/#how-it-works", accent: false },
+  { label: "Start a JV", href: "/submit", accent: false },
 ];
 
 export function SiteFooter() {
@@ -17,104 +17,84 @@ export function SiteFooter() {
 
   return (
     <footer className="bg-brand-navy">
-      <div className="mx-auto max-w-[1200px] px-6 pt-12 pb-6 sm:px-4 sm:pt-8">
-        <div className="grid grid-cols-12 gap-8 sm:grid-cols-1 md:grid-cols-2">
-          <div className="col-span-6 flex flex-col sm:col-span-1 md:col-span-2">
-            <Link href="/" className="mb-2 inline-block">
-              <Image
-                src="/app-logo/niche-logo.png"
-                alt="Niche"
-                width={486}
-                height={218}
-                style={{ width: "auto", height: "64px" }}
-              />
-            </Link>
-            <p className="mt-2 max-w-md text-[14px] leading-relaxed text-white/65">
+      <div className="mx-auto w-full max-w-[1200px] px-6 pt-12 pb-6 sm:px-4 sm:pt-10">
+        {/* Centered logo */}
+        <div className="mb-10 flex justify-center">
+          <Link href="/" aria-label="JV With Niche home">
+            <Image
+              src="/app-logo/niche-logo.png"
+              alt="Niche"
+              width={486}
+              height={218}
+              style={{ width: "auto", height: "56px" }}
+            />
+          </Link>
+        </div>
+
+        {/* Two equal columns */}
+        <div className="grid grid-cols-2 gap-8 sm:grid-cols-1 sm:gap-10">
+          {/* Column 1 — pitch + contact */}
+          <div className="flex flex-col gap-3 text-[13px] leading-relaxed text-white/70 sm:items-center sm:text-center">
+            <p className="max-w-sm">
               Submit a distressed-property JV opportunity to the Niche
-              acquisitions team. Capital, seller conversations, paperwork and
-              closing support — all on one deal.
+              acquisitions team — we partner on capital, seller conversations,
+              paperwork, and closing.
             </p>
-            <div className="mt-6 flex flex-col gap-1 text-[13px] text-white/60">
-              <div className="flex flex-wrap items-center gap-x-2">
-                <a
-                  href="mailto:support@nichecrm.ai"
-                  className="transition-colors hover:text-brand-orange"
-                >
-                  support@nichecrm.ai
-                </a>
-                <span className="text-white/30">|</span>
-                <a
-                  href="tel:+18163101161"
-                  className="transition-colors hover:text-brand-orange"
-                >
-                  816-310-1161
-                </a>
-              </div>
-              <span>3620 Arrowhead Ave, Independence, MO 64057</span>
-            </div>
+            <a
+              href="mailto:support@nichecrm.ai"
+              className="transition-colors hover:text-brand-orange"
+            >
+              support@nichecrm.ai
+            </a>
+            <a
+              href="tel:+18163101161"
+              className="transition-colors hover:text-brand-orange"
+            >
+              816-310-1161
+            </a>
+            <span className="text-white/65">3620 Arrowhead Ave</span>
+            <span className="text-white/65">Independence, MO 64057</span>
           </div>
 
-          <div className="col-span-3 sm:col-span-1 md:col-span-1">
-            <FooterColumn title="The portal" items={supportLinks} />
-          </div>
-
-          <div className="col-span-3 sm:col-span-1 md:col-span-1">
-            <FooterColumn title="The Niche Family" items={familyLinks} />
+          {/* Column 2 — family links + in-site links */}
+          <div className="flex flex-col sm:items-center sm:text-center">
+            <h3 className="mb-4 text-[11px] font-bold uppercase tracking-[0.14em] text-white/40">
+              The Niche Family
+            </h3>
+            <nav className="flex flex-col gap-2.5">
+              {familyLinks.map((item) => {
+                const className = `whitespace-nowrap text-[13px] font-medium transition-colors ${
+                  item.accent
+                    ? "text-brand-orange hover:text-white"
+                    : "text-white/70 hover:text-brand-orange"
+                }`;
+                return item.href.startsWith("http") ? (
+                  <a
+                    key={item.label}
+                    href={item.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={className}
+                  >
+                    {item.label}
+                  </a>
+                ) : (
+                  <Link key={item.label} href={item.href} className={className}>
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </nav>
           </div>
         </div>
 
+        {/* Bottom bar */}
         <div className="mt-10 border-t border-white/10 pt-5">
-          <div className="grid grid-cols-12 items-center gap-4 sm:grid-cols-1 sm:text-center md:grid-cols-2">
-            <p className="col-span-8 text-[12px] text-white/50 sm:col-span-1 md:col-span-2">
-              © {year} Niche Solutions. All rights reserved.
-            </p>
-            <p className="col-span-4 whitespace-nowrap text-right text-[12px] text-white/55 sm:col-span-1 sm:text-center">
-              A Niche Solutions product
-            </p>
-          </div>
+          <p className="text-[12px] text-white/50 sm:text-center">
+            © {year} Niche Solutions. All rights reserved.
+          </p>
         </div>
       </div>
     </footer>
-  );
-}
-
-function FooterColumn({
-  title,
-  items,
-}: {
-  title: string;
-  items: { label: string; href: string; accent?: boolean }[];
-}) {
-  return (
-    <div className="flex flex-col">
-      <h3 className="mb-4 text-[11px] font-bold uppercase tracking-[0.14em] text-white/40">
-        {title}
-      </h3>
-      <nav className="flex flex-col gap-2.5">
-        {items.map((item) => {
-          const className = `whitespace-nowrap text-[13px] font-medium transition-colors ${
-            item.accent
-              ? "text-brand-orange hover:text-white"
-              : "text-white/70 hover:text-brand-orange"
-          }`;
-          const isExternal = item.href.startsWith("http");
-          return isExternal ? (
-            <a
-              key={item.label}
-              href={item.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={className}
-            >
-              {item.label}
-            </a>
-          ) : (
-            <Link key={item.label} href={item.href} className={className}>
-              {item.label}
-            </Link>
-          );
-        })}
-      </nav>
-    </div>
   );
 }
