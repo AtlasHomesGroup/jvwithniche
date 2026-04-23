@@ -32,10 +32,10 @@ export function SiteHeader() {
           <Image
             src="/app-logo/niche-orange-icon.png"
             alt="Niche"
-            width={337}
+            width={291}
             height={291}
             priority
-            style={{ width: "auto", height: "40px" }}
+            style={{ width: "40px", height: "40px" }}
           />
         </Link>
 
