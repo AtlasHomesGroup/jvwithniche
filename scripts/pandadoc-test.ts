@@ -194,9 +194,9 @@ async function main() {
   // is what happens on a real user submission and exercises the paid-tier
   // external-email restriction on production keys.
   if (process.env.RUN_SEND === "1") {
-    console.log("\n▶ Sending (silent) — tests prod-tier external email send");
+    console.log("\n▶ Sending (silent=false) — emails Signer 1 by signing_order");
     try {
-      const sent = await sendDocument(doc.id, { silent: true });
+      const sent = await sendDocument(doc.id, { silent: false });
       console.log(`  Sent. Status: ${sent.status}`);
     } catch (err) {
       console.log(`  Send failed:`, (err as Error).message);

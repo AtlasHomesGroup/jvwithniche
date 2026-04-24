@@ -160,7 +160,7 @@ export async function POST(req: Request) {
         // Now safe to send. Still wrap in retry to be defensive against
         // transient 400s ("still uploading").
         try {
-          await sendDocument(doc.id, { silent: true });
+          await sendDocument(doc.id, { silent: false });
         } catch (sendErr) {
           const status =
             sendErr instanceof PandaDocApiError ? sendErr.status : null;
@@ -173,7 +173,7 @@ export async function POST(req: Request) {
             JSON.stringify({ docId: doc.id, status, body }),
           );
           await new Promise((r) => setTimeout(r, 1500));
-          await sendDocument(doc.id, { silent: true });
+          await sendDocument(doc.id, { silent: false });
         }
         console.info("[submit] pandadoc doc sent", doc.id);
         esignDocumentId = doc.id;

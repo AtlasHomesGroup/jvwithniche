@@ -106,6 +106,14 @@ export function buildRecipients(data: FullFormData): Recipient[] {
 
   const [nicheFirst, ...nicheRest] = nicheName.trim().split(/\s+/);
 
+  // silent=false on send (in the submit route) + default email delivery
+  // gives PandaDoc's signing_order behaviour: only Signer 1 (JV Partner)
+  // gets the initial "please sign" email when the doc is sent, and
+  // Signer 2 (Michael) automatically gets his email the moment the JV
+  // Partner's signature lands. PandaDoc requires at least one delivery
+  // method per recipient, so we can't suppress the JV Partner's email
+  // entirely — they'll just get a harmless extra email alongside the
+  // iframe flow.
   return [
     {
       email: data.email ?? "",

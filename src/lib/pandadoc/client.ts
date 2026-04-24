@@ -79,6 +79,10 @@ export type Recipient = {
   last_name: string;
   role?: string;
   signing_order?: number;
+  delivery_methods?: {
+    email?: boolean;
+    sms?: boolean;
+  };
 };
 
 export type TokenValue = {
