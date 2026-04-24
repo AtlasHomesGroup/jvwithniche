@@ -56,6 +56,13 @@ export async function POST(req: Request) {
   }
 
   const processed: string[] = [];
+  const failures: Array<{
+    event: string | undefined;
+    id: string | undefined;
+    kind: string;
+    message: string;
+    stack?: string;
+  }> = [];
   for (const event of events) {
     try {
       await processEvent(event);
@@ -63,11 +70,19 @@ export async function POST(req: Request) {
     } catch (err) {
       // Log and continue — PandaDoc retries failed deliveries, but other
       // events in the same batch shouldn't be held up by one bad row.
-      console.error("[pandadoc webhook] event failed", event, err);
+      const diag = {
+        event: event.event,
+        id: event.data?.id,
+        kind: err instanceof Error ? err.name : "unknown",
+        message: err instanceof Error ? err.message : String(err),
+        stack: err instanceof Error ? err.stack?.slice(0, 800) : undefined,
+      };
+      console.error("[pandadoc webhook] event failed", JSON.stringify(diag));
+      failures.push(diag);
     }
   }
 
-  return NextResponse.json({ ok: true, processed });
+  return NextResponse.json({ ok: true, processed, failures });
 }
 
 async function processEvent(event: PandaDocWebhookEvent): Promise<void> {
