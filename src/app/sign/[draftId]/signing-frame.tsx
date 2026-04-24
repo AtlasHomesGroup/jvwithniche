@@ -1,21 +1,29 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { CheckCircle2, CircleAlert } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
 
 const PANDADOC_ORIGIN = "https://app.pandadoc.com";
 
 /**
  * Embedded PandaDoc signing iframe.
  *
- * PandaDoc's embedded session emits postMessage events we can react to so
- * the user doesn't have to refresh after signing. The canonical source of
- * truth is still the server webhook (/api/webhooks/pandadoc); this is just
- * for nicer UX — it triggers a router.refresh() on completion so the page
- * re-fetches submission state and shows the "thanks" view.
+ * Watches for PandaDoc's postMessage events so we can replace the iframe
+ * with a branded "thanks" view the moment the JV Partner finishes their
+ * part — without waiting for Michael's counter-signature (which happens
+ * asynchronously via email). The webhook is still the source of truth for
+ * the DB state; this is the user-facing flow.
  */
-export function SigningFrame({ sessionUrl }: { sessionUrl: string }) {
-  const router = useRouter();
+export function SigningFrame({
+  sessionUrl,
+  submissionId,
+}: {
+  sessionUrl: string;
+  submissionId: string;
+}) {
   const [status, setStatus] = useState<"signing" | "completed" | "exception">(
     "signing",
   );
@@ -29,23 +37,20 @@ export function SigningFrame({ sessionUrl }: { sessionUrl: string }) {
 
       if (type === "session_view.document.completed") {
         setStatus("completed");
-        // Give the webhook a moment to land, then refresh the server state.
-        setTimeout(() => router.refresh(), 1500);
       } else if (type === "session_view.document.exception") {
         setStatus("exception");
       }
     }
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
-  }, [router]);
+  }, []);
+
+  if (status === "completed") {
+    return <CompletedView submissionId={submissionId} />;
+  }
 
   return (
     <div className="overflow-hidden rounded-xl border border-brand-navy/10 bg-white shadow-[0_8px_30px_rgba(27,58,92,0.06)]">
-      {status === "completed" && (
-        <div className="border-b border-brand-navy/10 bg-brand-orange-light/40 px-4 py-3 text-sm font-medium text-brand-navy">
-          Signature received — finishing up…
-        </div>
-      )}
       {status === "exception" && (
         <div className="border-b border-destructive/40 bg-destructive/5 px-4 py-3 text-sm font-medium text-destructive">
           Something went wrong inside PandaDoc. Refresh this page and try
@@ -62,6 +67,55 @@ export function SigningFrame({ sessionUrl }: { sessionUrl: string }) {
         className="block h-[820px] w-full md:h-[900px]"
         allow="camera; microphone; fullscreen"
       />
+    </div>
+  );
+}
+
+function CompletedView({ submissionId }: { submissionId: string }) {
+  return (
+    <div className="rounded-2xl border border-brand-navy/10 bg-white p-6 shadow-[0_8px_30px_rgba(27,58,92,0.06)] sm:p-5">
+      <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-brand-orange-light text-brand-orange">
+        <CheckCircle2 className="h-7 w-7" />
+      </div>
+      <h2 className="mt-4 text-2xl font-semibold tracking-tight text-brand-navy sm:text-xl md:text-3xl">
+        Signed. Thank you.
+      </h2>
+      <p className="mt-3 max-w-xl text-sm text-brand-text-muted">
+        Your signature is on file. Michael Franke at Niche Acquisitions will
+        counter-sign within 1–2 business days — you&apos;ll receive the fully
+        executed agreement via email the moment he does.
+      </p>
+
+      <div className="mt-6 grid gap-3 rounded-lg border border-brand-navy/10 bg-brand-cream/40 p-4 text-sm text-brand-text-dark">
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-brand-orange">
+            What happens next
+          </p>
+        </div>
+        <ol className="ml-5 list-decimal space-y-1.5 text-brand-text-dark">
+          <li>
+            Michael reviews your submission in the Niche CRM (you&apos;ll see
+            us in the WhatsApp group shortly).
+          </li>
+          <li>
+            He counter-signs the agreement in PandaDoc.
+          </li>
+          <li>
+            Both parties receive the executed PDF. We kick off the deal work.
+          </li>
+        </ol>
+      </div>
+
+      <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+        <Button asChild>
+          <Link href="/">Back to landing</Link>
+        </Button>
+        <div className="flex items-center gap-2 rounded-full border border-border px-4 py-2 text-[12px] text-brand-text-muted">
+          <CircleAlert className="h-3.5 w-3.5 text-brand-text-muted" />
+          Reference:{" "}
+          <code className="font-mono">{submissionId.slice(0, 8)}…</code>
+        </div>
+      </div>
     </div>
   );
 }

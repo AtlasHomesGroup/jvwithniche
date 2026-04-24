@@ -116,7 +116,7 @@ export default async function SignPage({
       description="Your info has been merged into the agreement. Signing takes 2–3 clicks — you stay on this page the whole time."
     >
       {sessionUrl ? (
-        <SigningFrame sessionUrl={sessionUrl} />
+        <SigningFrame sessionUrl={sessionUrl} submissionId={submission.id} />
       ) : (
         <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-6 text-sm">
           <p className="font-medium text-destructive">
