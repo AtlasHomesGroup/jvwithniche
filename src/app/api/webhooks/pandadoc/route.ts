@@ -72,6 +72,15 @@ export async function POST(req: Request) {
 
 async function processEvent(event: PandaDocWebhookEvent): Promise<void> {
   const docId = event.data?.id;
+  console.info(
+    "[pandadoc webhook] event received",
+    JSON.stringify({
+      event: event.event,
+      docId,
+      status: event.data?.status,
+      keys: event.data ? Object.keys(event.data) : [],
+    }),
+  );
   if (!docId) return;
 
   // Look up our submission by the PandaDoc document id.
@@ -82,9 +91,22 @@ async function processEvent(event: PandaDocWebhookEvent): Promise<void> {
     .limit(1);
   const submission = rows[0];
   if (!submission) {
-    console.warn("[pandadoc webhook] no submission for doc", docId);
+    console.warn(
+      "[pandadoc webhook] no submission for doc",
+      JSON.stringify({ docId, docIdLen: docId.length }),
+    );
     return;
   }
+
+  console.info(
+    "[pandadoc webhook] submission matched",
+    JSON.stringify({
+      docId,
+      submissionId: submission.id,
+      status: submission.status,
+      eventStatus: event.data?.status,
+    }),
+  );
 
   const isComplete =
     event.event === "document_state_changed" &&
