@@ -46,7 +46,7 @@ export function buildMergeTokens(data: FullFormData): TokenValue[] {
     .join(", ");
 
   const auctionDate =
-    data.dealType === "Pre-foreclosure" || data.dealType === "NOD"
+    data.dealType === "Foreclosure"
       ? formatIsoDate(data.foreclosure_auctionDate)
       : data.dealType === "Surplus Funds"
         ? formatIsoDate(data.sf_auctionDate)

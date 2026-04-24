@@ -4,7 +4,6 @@ import { useFormContext } from "react-hook-form";
 
 import {
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -13,12 +12,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { YesNoField } from "@/components/form/yes-no-field";
-import { ScaleField } from "@/components/form/scale-field";
 import type { FullFormData } from "@/lib/form-schema";
 
 export function ForeclosureDiscovery() {
   const form = useFormContext<FullFormData>();
-  const onlyOwner = form.watch("foreclosure_onlyOwnerOnTitle");
 
   return (
     <div className="space-y-6">
@@ -54,14 +51,13 @@ export function ForeclosureDiscovery() {
       <FormField
         control={form.control}
         name="foreclosure_onlyOwnerOnTitle"
-        render={({ field, fieldState }) => (
+        render={({ field }) => (
           <FormItem>
             <FormLabel>Is the prospect the only owner on title?</FormLabel>
             <FormControl>
               <YesNoField
                 value={field.value}
                 onValueChange={field.onChange}
-                invalid={!!fieldState.error}
               />
             </FormControl>
             <FormMessage />
@@ -69,7 +65,7 @@ export function ForeclosureDiscovery() {
         )}
       />
 
-      {onlyOwner === "No" && (
+      {form.watch("foreclosure_onlyOwnerOnTitle") === "No" && (
         <FormField
           control={form.control}
           name="foreclosure_otherOwners"
@@ -88,7 +84,7 @@ export function ForeclosureDiscovery() {
       <FormField
         control={form.control}
         name="foreclosure_recentMortgageStatement"
-        render={({ field, fieldState }) => (
+        render={({ field }) => (
           <FormItem>
             <FormLabel>
               Does the prospect have a recent mortgage statement?
@@ -97,7 +93,6 @@ export function ForeclosureDiscovery() {
               <YesNoField
                 value={field.value}
                 onValueChange={field.onChange}
-                invalid={!!fieldState.error}
               />
             </FormControl>
             <FormMessage />
@@ -111,7 +106,7 @@ export function ForeclosureDiscovery() {
         render={({ field }) => (
           <FormItem>
             <FormLabel>
-              More than one mortgage on the property? Or COVID assistance / HAF?
+              More than one mortgage? Or COVID assistance / HAF?
             </FormLabel>
             <FormControl>
               <Textarea rows={3} {...field} />
@@ -124,17 +119,15 @@ export function ForeclosureDiscovery() {
       <FormField
         control={form.control}
         name="foreclosure_lenderBackendPromise"
-        render={({ field, fieldState }) => (
+        render={({ field }) => (
           <FormItem>
             <FormLabel>
-              Did the lender ever tell them money would be put on the back end
-              of the loan?
+              Did the lender ever tell them money would be put on the back end?
             </FormLabel>
             <FormControl>
               <YesNoField
                 value={field.value}
                 onValueChange={field.onChange}
-                invalid={!!fieldState.error}
               />
             </FormControl>
             <FormMessage />
@@ -144,49 +137,25 @@ export function ForeclosureDiscovery() {
 
       <FormField
         control={form.control}
-        name="foreclosure_urgencyScale"
-        render={({ field, fieldState }) => (
+        name="foreclosure_paymentsMissed"
+        render={({ field }) => (
           <FormItem>
-            <FormLabel>Prospect&apos;s urgency — 1 to 10</FormLabel>
+            <FormLabel>How many payments missed?</FormLabel>
             <FormControl>
-              <ScaleField
-                value={field.value}
-                onValueChange={field.onChange}
-                min={1}
-                max={10}
-                lowLabel="In denial"
-                highLabel="Ready to act"
-                invalid={!!fieldState.error}
+              <Input
+                type="number"
+                min={0}
+                value={field.value ?? ""}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  field.onChange(v === "" ? undefined : Number(v));
+                }}
               />
             </FormControl>
             <FormMessage />
           </FormItem>
         )}
       />
-
-      <div className="grid gap-5 md:grid-cols-2">
-        <FormField
-          control={form.control}
-          name="foreclosure_paymentsMissed"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>How many payments missed?</FormLabel>
-              <FormControl>
-                <Input
-                  type="number"
-                  min={0}
-                  value={field.value ?? ""}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    field.onChange(v === "" ? undefined : Number(v));
-                  }}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </div>
 
       <FormField
         control={form.control}
@@ -197,10 +166,6 @@ export function ForeclosureDiscovery() {
             <FormControl>
               <Textarea rows={4} {...field} />
             </FormControl>
-            <FormDescription>
-              Ask honestly — hardship programs may be available and may need
-              supporting documentation.
-            </FormDescription>
             <FormMessage />
           </FormItem>
         )}
@@ -212,7 +177,7 @@ export function ForeclosureDiscovery() {
         render={({ field }) => (
           <FormItem>
             <FormLabel>
-              Magic wand — reasonable outcome from the prospect&apos;s perspective?
+              Magic wand — reasonable outcome from their perspective?
             </FormLabel>
             <FormControl>
               <Textarea rows={4} {...field} />

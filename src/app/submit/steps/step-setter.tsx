@@ -28,6 +28,7 @@ export function StepSetter() {
         title="Tell us who&apos;s bringing the deal."
         description="Your contact details so we can reach you and add you to the WhatsApp group with Michael and the acquisitions team."
       />
+      <RequiredLegend />
 
       <div className="grid gap-5 md:grid-cols-2">
         <FormField
@@ -35,7 +36,7 @@ export function StepSetter() {
           name="firstName"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>First name</FormLabel>
+              <FormLabel required>First name</FormLabel>
               <FormControl>
                 <Input autoComplete="given-name" {...field} />
               </FormControl>
@@ -48,7 +49,7 @@ export function StepSetter() {
           name="lastName"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Last name</FormLabel>
+              <FormLabel required>Last name</FormLabel>
               <FormControl>
                 <Input autoComplete="family-name" {...field} />
               </FormControl>
@@ -63,7 +64,7 @@ export function StepSetter() {
         name="address"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Street address</FormLabel>
+            <FormLabel required>Street address</FormLabel>
             <FormControl>
               <Input autoComplete="street-address" {...field} />
             </FormControl>
@@ -78,7 +79,7 @@ export function StepSetter() {
           name="city"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>City</FormLabel>
+              <FormLabel required>City</FormLabel>
               <FormControl>
                 <Input autoComplete="address-level2" {...field} />
               </FormControl>
@@ -91,7 +92,7 @@ export function StepSetter() {
           name="state"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>State</FormLabel>
+              <FormLabel required>State</FormLabel>
               <FormControl>
                 <Input autoComplete="address-level1" {...field} />
               </FormControl>
@@ -104,7 +105,7 @@ export function StepSetter() {
           name="zip"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>ZIP</FormLabel>
+              <FormLabel required>ZIP</FormLabel>
               <FormControl>
                 <Input autoComplete="postal-code" {...field} />
               </FormControl>
@@ -114,27 +115,13 @@ export function StepSetter() {
         />
       </div>
 
-      <FormField
-        control={form.control}
-        name="country"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Country</FormLabel>
-            <FormControl>
-              <Input autoComplete="country-name" {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
       <div className="grid gap-5 md:grid-cols-2">
         <FormField
           control={form.control}
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email</FormLabel>
+              <FormLabel required>Email</FormLabel>
               <FormControl>
                 <Input type="email" autoComplete="email" {...field} />
               </FormControl>
@@ -147,7 +134,7 @@ export function StepSetter() {
           name="phoneE164"
           render={({ field, fieldState }) => (
             <FormItem>
-              <FormLabel>Cell phone</FormLabel>
+              <FormLabel required>Cell phone</FormLabel>
               <FormControl>
                 <PhoneField
                   value={field.value}
@@ -179,7 +166,7 @@ export function StepSetter() {
                 />
               </FormControl>
               <div className="space-y-1">
-                <FormLabel className="text-[13px] font-medium leading-snug">
+                <FormLabel required className="text-[13px] font-medium leading-snug">
                   I confirm this phone number has WhatsApp installed and I agree
                   to join a WhatsApp group with the Niche acquisitions team to
                   discuss this deal.
@@ -228,7 +215,7 @@ export function StepSetter() {
           name="communityEmail"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Community registration email</FormLabel>
+              <FormLabel required>Community registration email</FormLabel>
               <FormControl>
                 <Input
                   type="email"
@@ -272,5 +259,14 @@ export function StepHeading({
         </p>
       )}
     </header>
+  );
+}
+
+export function RequiredLegend() {
+  return (
+    <p className="text-[12px] text-brand-text-muted">
+      Fields marked with{" "}
+      <span className="font-semibold text-brand-orange">*</span> are required.
+    </p>
   );
 }

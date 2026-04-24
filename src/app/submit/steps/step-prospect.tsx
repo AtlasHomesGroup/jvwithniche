@@ -24,22 +24,18 @@ import {
   type PlaceSelection,
 } from "@/components/form/places-autocomplete";
 import { OCCUPANCY_OPTIONS, type FullFormData } from "@/lib/form-schema";
-import { StepHeading } from "./step-setter";
+import { RequiredLegend, StepHeading } from "./step-setter";
 
 export function StepProspect() {
   const form = useFormContext<FullFormData>();
   const dealType = form.watch("dealType");
-  const requiresLender =
-    dealType === "Pre-foreclosure" || dealType === "NOD";
+  const isForeclosure = dealType === "Foreclosure";
 
   function applyPlace(place: PlaceSelection) {
     form.setValue("propertyStreet", place.street, { shouldDirty: true });
     form.setValue("propertyCity", place.city, { shouldDirty: true });
     form.setValue("propertyState", place.state, { shouldDirty: true });
     form.setValue("propertyZip", place.zip, { shouldDirty: true });
-    form.setValue("propertyCountry", place.country || "US", {
-      shouldDirty: true,
-    });
   }
 
   return (
@@ -49,6 +45,7 @@ export function StepProspect() {
         title="Who&apos;s the seller, and what&apos;s the property?"
         description="The homeowner you've been speaking with and the property you're bringing to the JV."
       />
+      <RequiredLegend />
 
       <div className="grid gap-5 md:grid-cols-2">
         <FormField
@@ -56,7 +53,7 @@ export function StepProspect() {
           name="prospectFirstName"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Prospect first name</FormLabel>
+              <FormLabel required>Prospect first name</FormLabel>
               <FormControl>
                 <Input {...field} />
               </FormControl>
@@ -69,7 +66,7 @@ export function StepProspect() {
           name="prospectLastName"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Prospect last name</FormLabel>
+              <FormLabel required>Prospect last name</FormLabel>
               <FormControl>
                 <Input {...field} />
               </FormControl>
@@ -84,7 +81,7 @@ export function StepProspect() {
         name="propertyStreet"
         render={({ field, fieldState }) => (
           <FormItem>
-            <FormLabel>Property address</FormLabel>
+            <FormLabel required>Property address</FormLabel>
             <FormControl>
               <PlacesAutocomplete
                 value={field.value}
@@ -108,7 +105,7 @@ export function StepProspect() {
           name="propertyCity"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>City</FormLabel>
+              <FormLabel required>City</FormLabel>
               <FormControl>
                 <Input {...field} />
               </FormControl>
@@ -121,7 +118,7 @@ export function StepProspect() {
           name="propertyState"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>State</FormLabel>
+              <FormLabel required>State</FormLabel>
               <FormControl>
                 <Input {...field} />
               </FormControl>
@@ -134,7 +131,7 @@ export function StepProspect() {
           name="propertyZip"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>ZIP</FormLabel>
+              <FormLabel required>ZIP</FormLabel>
               <FormControl>
                 <Input {...field} />
               </FormControl>
@@ -143,20 +140,6 @@ export function StepProspect() {
           )}
         />
       </div>
-
-      <FormField
-        control={form.control}
-        name="propertyCountry"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Country</FormLabel>
-            <FormControl>
-              <Input {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
 
       <div className="grid gap-5 md:grid-cols-2">
         <FormField
@@ -198,7 +181,7 @@ export function StepProspect() {
         name="occupancy"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Property occupancy</FormLabel>
+            <FormLabel>Property occupancy (optional)</FormLabel>
             <Select
               value={field.value ?? ""}
               onValueChange={field.onChange}
@@ -221,7 +204,7 @@ export function StepProspect() {
         )}
       />
 
-      {requiresLender && (
+      {isForeclosure && (
         <div className="grid gap-5 rounded-lg border border-brand-orange/30 bg-brand-orange-light/40 p-4 md:grid-cols-2">
           <FormField
             control={form.control}

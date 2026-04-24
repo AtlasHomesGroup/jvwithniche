@@ -15,10 +15,7 @@
 
 import {
   createDocument,
-  createEmbedSession,
-  getDocument,
   getDocumentStatus,
-  sendDocument,
 } from "@/lib/pandadoc/client";
 import {
   buildMergeTokens,
@@ -28,26 +25,6 @@ import {
 import type { FullFormData } from "@/lib/form-schema";
 
 const PANDADOC_API_BASE = "https://api.pandadoc.com/public/v1";
-
-async function fetchTemplateDetails(templateId: string, apiKey: string) {
-  const res = await fetch(`${PANDADOC_API_BASE}/templates/${templateId}/details`, {
-    headers: {
-      Authorization: `API-Key ${apiKey}`,
-      Accept: "application/json",
-    },
-  });
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    throw new Error(`Template details failed: ${res.status} ${body}`);
-  }
-  return res.json() as Promise<{
-    id: string;
-    name: string;
-    roles: Array<{ id: string; name: string; preassigned_person?: unknown }>;
-    tokens: Array<{ name: string; value?: string }>;
-    fields: Array<{ uuid: string; name: string; assigned_to: { role: string } }>;
-  }>;
-}
 
 function sample(): FullFormData {
   return {

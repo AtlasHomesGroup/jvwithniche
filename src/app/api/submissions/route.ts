@@ -13,6 +13,7 @@ import {
   narrativeSchema,
   prospectSchema,
   setterSchema,
+  urgencySchema,
   variantSchemaByDealType,
   type FullFormData,
 } from "@/lib/form-schema";
@@ -88,29 +89,14 @@ export async function POST(req: Request) {
     collect(errors, prospectSchema.safeParse(formData));
     collect(errors, dealTypeSchema.safeParse(formData));
     collect(errors, narrativeSchema.safeParse(formData));
+    collect(errors, urgencySchema.safeParse(formData));
 
-    // Variant-specific validation once we know the deal type.
+    // Variant-specific validation (if we have a script for this deal type).
     const dealTypeResult = dealTypeSchema.safeParse(formData);
     if (dealTypeResult.success) {
       const variant = variantSchemaByDealType[dealTypeResult.data.dealType];
-      collect(errors, variant.safeParse(formData));
-
-      // Cross-section refine: lender + trustee required for Pre-foreclosure/NOD.
-      if (
-        dealTypeResult.data.dealType === "Pre-foreclosure" ||
-        dealTypeResult.data.dealType === "NOD"
-      ) {
-        if (!formData.lender || formData.lender.trim().length === 0) {
-          (errors.lender ??= []).push("Mortgage company / lender is required");
-        }
-        if (
-          !formData.foreclosingTrustee ||
-          formData.foreclosingTrustee.trim().length === 0
-        ) {
-          (errors.foreclosingTrustee ??= []).push(
-            "Foreclosing trustee is required",
-          );
-        }
+      if (variant) {
+        collect(errors, variant.safeParse(formData));
       }
     }
 

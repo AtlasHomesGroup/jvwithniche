@@ -64,8 +64,7 @@ export function StepReview({
           <Row label="Prospect" value={prospectName} />
           <Row label="Property" value={propertyAddress} />
           <Row label="Occupancy" value={values.occupancy ?? "—"} />
-          {(values.dealType === "Pre-foreclosure" ||
-            values.dealType === "NOD") && (
+          {values.dealType === "Foreclosure" && (
             <>
               <Row label="Lender" value={values.lender || "—"} />
               <Row
@@ -188,7 +187,10 @@ function DiscoverySummary({ values }: { values: Partial<FullFormData> }) {
 
   const rows: Array<[string, string | number | undefined]> = [];
 
-  if (d === "Pre-foreclosure" || d === "NOD") {
+  // Universal — every deal type has the urgency scale.
+  rows.push(["Urgency 1-10", values.urgencyScale]);
+
+  if (d === "Foreclosure") {
     rows.push(
       ["Auction date", values.foreclosure_auctionDate],
       ["Auction time", values.foreclosure_auctionTime],
@@ -197,7 +199,6 @@ function DiscoverySummary({ values }: { values: Partial<FullFormData> }) {
       ["Mortgage statement?", values.foreclosure_recentMortgageStatement],
       ["Multiple mortgages / HAF", values.foreclosure_multipleMortgagesOrHaf],
       ["Lender backend promise", values.foreclosure_lenderBackendPromise],
-      ["Urgency 1-10", values.foreclosure_urgencyScale],
       ["Payments missed", values.foreclosure_paymentsMissed],
       ["Hardship reason", values.foreclosure_hardshipReason],
       ["Magic wand outcome", values.foreclosure_magicWand],
@@ -215,7 +216,7 @@ function DiscoverySummary({ values }: { values: Partial<FullFormData> }) {
       ["Heirs detail", values.probate_heirsDetail],
       ["Outstanding liens", values.probate_outstandingLiens],
     );
-  } else if (d === "Pre-probate") {
+  } else if (d === "Pre-Probate") {
     rows.push(
       ["Deceased", values.preprobate_deceasedFullName],
       ["Date of death", values.preprobate_dateOfDeath],

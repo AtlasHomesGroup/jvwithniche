@@ -4,7 +4,6 @@ import { useFormContext } from "react-hook-form";
 
 import {
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -13,9 +12,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 import { ASSISTANCE_OPTIONS, type FullFormData } from "@/lib/form-schema";
-import { StepHeading } from "./step-setter";
+import { RequiredLegend, StepHeading } from "./step-setter";
 
 export function StepNarrative() {
   const form = useFormContext<FullFormData>();
@@ -27,21 +25,19 @@ export function StepNarrative() {
       <StepHeading
         eyebrow="Step 4 · Deal narrative"
         title="Tell us the story."
-        description="What's going on with this prospect, what you've learned so far, and what you need from Niche."
+        description="The more context, the better — but only one thing here is required. Everything else is optional."
       />
+      <RequiredLegend />
 
       <FormField
         control={form.control}
         name="challenge"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>
-              Explain the specific challenge with this prospect
-            </FormLabel>
+            <FormLabel>Explain the specific challenge with this prospect</FormLabel>
             <FormControl>
               <Textarea rows={4} {...field} />
             </FormControl>
-            <FormDescription>Minimum 40 characters.</FormDescription>
             <FormMessage />
           </FormItem>
         )}
@@ -58,7 +54,6 @@ export function StepNarrative() {
             <FormControl>
               <Textarea rows={4} {...field} />
             </FormControl>
-            <FormDescription>Minimum 40 characters.</FormDescription>
             <FormMessage />
           </FormItem>
         )}
@@ -87,7 +82,7 @@ export function StepNarrative() {
         name="assistanceRequested"
         render={({ field, fieldState }) => (
           <FormItem>
-            <FormLabel>What assistance are you seeking in the JV?</FormLabel>
+            <FormLabel required>What assistance are you seeking in the JV?</FormLabel>
             <FormControl>
               <div
                 className="grid gap-3 sm:grid-cols-1 md:grid-cols-2"
@@ -131,7 +126,7 @@ export function StepNarrative() {
           name="assistanceOther"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Other assistance — describe</FormLabel>
+              <FormLabel required>Other assistance — describe</FormLabel>
               <FormControl>
                 <Input {...field} />
               </FormControl>
@@ -150,7 +145,6 @@ export function StepNarrative() {
             <FormControl>
               <Textarea rows={4} {...field} />
             </FormControl>
-            <FormDescription>Minimum 40 characters.</FormDescription>
             <FormMessage />
           </FormItem>
         )}
@@ -161,7 +155,7 @@ export function StepNarrative() {
         name="additionalInfo"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Anything else we should know? (optional)</FormLabel>
+            <FormLabel>Anything else we should know?</FormLabel>
             <FormControl>
               <Textarea rows={3} {...field} />
             </FormControl>
@@ -169,9 +163,6 @@ export function StepNarrative() {
           </FormItem>
         )}
       />
-
-      {/* Keep the label reference so the visualizer hint is silent */}
-      <Label className="sr-only">spacer</Label>
     </div>
   );
 }

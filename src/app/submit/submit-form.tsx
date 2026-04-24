@@ -13,7 +13,6 @@ import { useDraftAutosave } from "@/hooks/use-draft-autosave";
 import { useRecaptcha } from "@/hooks/use-recaptcha";
 import {
   DEFAULT_FORM_VALUES,
-  DISCOVERY_FIELDS_BY_DEAL_TYPE,
   FORM_STEPS,
   STEP_FIELDS,
   fullFormSchema,
@@ -58,13 +57,7 @@ export function SubmitForm({
 
   const fieldsForCurrentStep = useMemo<
     ReadonlyArray<keyof FullFormData>
-  >(() => {
-    if (currentStep === "discovery") {
-      const dt = form.getValues("dealType");
-      return dt ? DISCOVERY_FIELDS_BY_DEAL_TYPE[dt] : [];
-    }
-    return STEP_FIELDS[currentStep];
-  }, [currentStep, form]);
+  >(() => STEP_FIELDS[currentStep], [currentStep]);
 
   const goToStep = useCallback((step: FormStepId) => {
     setCurrentStep(step);
@@ -159,9 +152,50 @@ export function SubmitForm({
     if (prev) goToStep(prev);
   }, [currentIndex, goToStep, isFirst]);
 
+  /** Handle clicks on the step markers.
+   *  - Backward jumps are always allowed.
+   *  - Forward jumps validate the current step (and every step in between)
+   *    and only proceed if all required fields are filled. */
+  const onStepClick = useCallback(
+    async (target: FormStepId) => {
+      const targetIndex = FORM_STEPS.findIndex((s) => s.id === target);
+      if (targetIndex === -1) return;
+
+      // Backward — unconditional.
+      if (targetIndex <= currentIndex) {
+        goToStep(target);
+        return;
+      }
+
+      // Forward — validate each step between current (inclusive) and
+      // the target (exclusive) against its required-field list.
+      for (let i = currentIndex; i < targetIndex; i++) {
+        const stepId = FORM_STEPS[i]!.id;
+        const fields = STEP_FIELDS[stepId];
+        if (fields.length === 0) continue;
+        const ok = await form.trigger(
+          fields as (keyof FullFormData)[],
+          { shouldFocus: i === currentIndex },
+        );
+        if (!ok) {
+          // Stop at the first incomplete step.
+          goToStep(stepId);
+          return;
+        }
+        setCompletedSteps((prev) => new Set(prev).add(stepId));
+      }
+      goToStep(target);
+    },
+    [currentIndex, form, goToStep],
+  );
+
   return (
     <div className="mx-auto max-w-3xl px-6 py-10 sm:px-4 sm:py-8">
-      <StepProgress currentStep={currentStep} completedSteps={completedSteps} />
+      <StepProgress
+        currentStep={currentStep}
+        completedSteps={completedSteps}
+        onStepClick={(step) => void onStepClick(step)}
+      />
 
       <Form {...form}>
         <form

@@ -9,9 +9,11 @@ import { FORM_STEPS, type FormStepId } from "@/lib/form-schema";
 export function StepProgress({
   currentStep,
   completedSteps,
+  onStepClick,
 }: {
   currentStep: FormStepId;
   completedSteps: ReadonlySet<FormStepId>;
+  onStepClick?: (step: FormStepId) => void;
 }) {
   const currentIndex = FORM_STEPS.findIndex((s) => s.id === currentStep);
 
@@ -37,49 +39,69 @@ export function StepProgress({
         </div>
       </div>
 
-      {/* Desktop: evenly-spaced circles with labels centered beneath */}
+      {/* Desktop: evenly-spaced circles with labels beneath */}
       <ol className="hidden items-start md:flex">
         {FORM_STEPS.map((step, i) => {
           const isCurrent = step.id === currentStep;
           const isComplete = completedSteps.has(step.id) || i < currentIndex;
           const connectorComplete = i < currentIndex;
 
+          // Any step is clickable — the parent validates + gates forward
+          // navigation. Going backward always works.
+          const clickable = !isCurrent && !!onStepClick;
+
+          const Wrapper = clickable ? "button" : "div";
+
           return (
             <Fragment key={step.id}>
               <li className="flex w-24 flex-shrink-0 flex-col items-center gap-2">
-                <span
+                <Wrapper
+                  type={clickable ? "button" : undefined}
+                  onClick={clickable ? () => onStepClick(step.id) : undefined}
                   className={cn(
-                    "relative z-10 flex h-7 w-7 items-center justify-center rounded-full border bg-white text-[12px] font-semibold transition-colors",
-                    isCurrent &&
-                      "border-brand-navy bg-brand-navy text-white",
-                    !isCurrent &&
-                      isComplete &&
-                      "border-brand-orange bg-brand-orange text-white",
-                    !isCurrent &&
-                      !isComplete &&
-                      "border-border text-brand-text-muted",
+                    "flex flex-col items-center gap-2 focus-visible:outline-none",
+                    clickable &&
+                      "rounded-md transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-brand-navy/30 focus-visible:ring-offset-2",
                   )}
+                  aria-label={
+                    clickable ? `Go to ${step.label}` : undefined
+                  }
+                  aria-current={isCurrent ? "step" : undefined}
                 >
-                  {isComplete && !isCurrent ? (
-                    <CheckCircle2
-                      className="h-4 w-4"
-                      strokeWidth={2.5}
-                      aria-hidden="true"
-                    />
-                  ) : (
-                    i + 1
-                  )}
-                </span>
-                <span
-                  className={cn(
-                    "text-center text-[11px] font-semibold uppercase leading-tight tracking-wider",
-                    isCurrent
-                      ? "text-brand-navy"
-                      : "text-brand-text-muted",
-                  )}
-                >
-                  {step.label}
-                </span>
+                  <span
+                    className={cn(
+                      "relative z-10 flex h-7 w-7 items-center justify-center rounded-full border bg-white text-[12px] font-semibold transition-colors",
+                      isCurrent &&
+                        "border-brand-navy bg-brand-navy text-white",
+                      !isCurrent &&
+                        isComplete &&
+                        "border-brand-orange bg-brand-orange text-white",
+                      !isCurrent &&
+                        !isComplete &&
+                        "border-border text-brand-text-muted",
+                    )}
+                  >
+                    {isComplete && !isCurrent ? (
+                      <CheckCircle2
+                        className="h-4 w-4"
+                        strokeWidth={2.5}
+                        aria-hidden="true"
+                      />
+                    ) : (
+                      i + 1
+                    )}
+                  </span>
+                  <span
+                    className={cn(
+                      "text-center text-[11px] font-semibold uppercase leading-tight tracking-wider",
+                      isCurrent
+                        ? "text-brand-navy"
+                        : "text-brand-text-muted",
+                    )}
+                  >
+                    {step.label}
+                  </span>
+                </Wrapper>
               </li>
               {i < FORM_STEPS.length - 1 && (
                 <div
