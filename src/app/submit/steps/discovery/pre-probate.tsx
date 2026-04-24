@@ -23,6 +23,7 @@ import {
   PREPROBATE_OCCUPANCY_OPTIONS,
   type FullFormData,
 } from "@/lib/form-schema";
+import { OptionalTag } from "../step-setter";
 
 export function PreProbateDiscovery() {
   const form = useFormContext<FullFormData>();
@@ -34,7 +35,7 @@ export function PreProbateDiscovery() {
         name="preprobate_deceasedFullName"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Deceased full name</FormLabel>
+            <FormLabel>Deceased full name <OptionalTag /></FormLabel>
             <FormControl>
               <Input {...field} />
             </FormControl>
@@ -48,7 +49,7 @@ export function PreProbateDiscovery() {
         name="preprobate_dateOfDeath"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Date of death (if known)</FormLabel>
+            <FormLabel>Date of death (if known) <OptionalTag /></FormLabel>
             <FormControl>
               <Input type="date" {...field} />
             </FormControl>
@@ -62,7 +63,7 @@ export function PreProbateDiscovery() {
         name="preprobate_relationshipToDeceased"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Your relationship to the deceased / heir</FormLabel>
+            <FormLabel>Your relationship to the deceased / heir <OptionalTag /></FormLabel>
             <FormControl>
               <Input {...field} />
             </FormControl>
@@ -76,7 +77,7 @@ export function PreProbateDiscovery() {
         name="preprobate_likelyHeir"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Who is the likely heir / next of kin?</FormLabel>
+            <FormLabel>Who is the likely heir / next of kin? <OptionalTag /></FormLabel>
             <FormControl>
               <Input {...field} />
             </FormControl>
@@ -90,7 +91,7 @@ export function PreProbateDiscovery() {
         name="preprobate_probateInitiated"
         render={({ field, fieldState }) => (
           <FormItem>
-            <FormLabel>Have any family members initiated probate yet?</FormLabel>
+            <FormLabel>Have any family members initiated probate yet? <OptionalTag /></FormLabel>
             <FormControl>
               <YesNoField
                 value={field.value}
@@ -108,7 +109,7 @@ export function PreProbateDiscovery() {
         name="preprobate_propertyOccupancy"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Is the property currently occupied?</FormLabel>
+            <FormLabel>Is the property currently occupied? <OptionalTag /></FormLabel>
             <Select value={field.value ?? ""} onValueChange={field.onChange}>
               <FormControl>
                 <SelectTrigger>
@@ -133,7 +134,7 @@ export function PreProbateDiscovery() {
         name="preprobate_outstandingLiens"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Any outstanding liens / mortgages?</FormLabel>
+            <FormLabel>Any outstanding liens / mortgages? <OptionalTag /></FormLabel>
             <FormControl>
               <Textarea rows={3} {...field} />
             </FormControl>

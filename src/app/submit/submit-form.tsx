@@ -15,11 +15,17 @@ import {
   DEFAULT_FORM_VALUES,
   FORM_STEPS,
   STEP_FIELDS,
+  dealTypeSchema,
   fullFormSchema,
+  narrativeSchema,
+  prospectSchema,
+  setterSchema,
+  urgencySchema,
   type FormStepId,
   type FullFormData,
   type FullFormOutput,
 } from "@/lib/form-schema";
+import type { ZodType } from "zod";
 import { StepSetter } from "./steps/step-setter";
 import { StepProspect } from "./steps/step-prospect";
 import { StepDealType } from "./steps/step-deal-type";
@@ -58,6 +64,47 @@ export function SubmitForm({
   const fieldsForCurrentStep = useMemo<
     ReadonlyArray<keyof FullFormData>
   >(() => STEP_FIELDS[currentStep], [currentStep]);
+
+  /** Per-step STRICT schema that actually enforces required fields —
+   *  distinct from the permissive fullFormSchema used for draft autosave.
+   *  Null = no strict validation on this step. */
+  const stepStrictSchemas = useMemo<
+    Record<FormStepId, ZodType | null>
+  >(
+    () => ({
+      setter: setterSchema,
+      prospect: prospectSchema,
+      dealType: dealTypeSchema,
+      narrative: narrativeSchema,
+      discovery: urgencySchema,
+      review: null,
+    }),
+    [],
+  );
+
+  const validateStep = useCallback(
+    (step: FormStepId): boolean => {
+      const schema = stepStrictSchemas[step];
+      if (!schema) return true;
+      const values = form.getValues();
+      const result = schema.safeParse(values);
+      if (result.success) return true;
+      // Surface each issue on the form.
+      for (const issue of result.error.issues) {
+        const path = issue.path.join(".") as keyof FullFormData;
+        form.setError(path, {
+          type: "server",
+          message: issue.message,
+        });
+      }
+      const firstPath = result.error.issues[0]?.path.join(
+        ".",
+      ) as keyof FullFormData | undefined;
+      if (firstPath) form.setFocus(firstPath);
+      return false;
+    },
+    [form, stepStrictSchemas],
+  );
 
   const goToStep = useCallback((step: FormStepId) => {
     setCurrentStep(step);
@@ -120,12 +167,16 @@ export function SubmitForm({
   }, [executeRecaptcha, form, router]);
 
   const onNext = useCallback(async () => {
-    const valid = fieldsForCurrentStep.length === 0
+    // Flat-schema trigger first (surfaces format issues like invalid email).
+    const triggeredOk = fieldsForCurrentStep.length === 0
       ? true
       : await form.trigger(fieldsForCurrentStep as (keyof FullFormData)[], {
           shouldFocus: true,
         });
-    if (!valid) return;
+    if (!triggeredOk) return;
+    // Strict per-step validation — catches missing required fields that
+    // the permissive fullFormSchema lets through.
+    if (!validateStep(currentStep)) return;
 
     setCompletedSteps((prev) => new Set(prev).add(currentStep));
 
@@ -144,6 +195,7 @@ export function SubmitForm({
     goToStep,
     isLast,
     submitForSigning,
+    validateStep,
   ]);
 
   const onBack = useCallback(() => {
@@ -167,18 +219,23 @@ export function SubmitForm({
         return;
       }
 
-      // Forward — validate each step between current (inclusive) and
-      // the target (exclusive) against its required-field list.
+      // Forward — run both the RHF trigger AND the strict schema on each
+      // step between current (inclusive) and target (exclusive). Bail at
+      // the first incomplete step so the user lands there to fix it.
       for (let i = currentIndex; i < targetIndex; i++) {
         const stepId = FORM_STEPS[i]!.id;
         const fields = STEP_FIELDS[stepId];
-        if (fields.length === 0) continue;
-        const ok = await form.trigger(
-          fields as (keyof FullFormData)[],
-          { shouldFocus: i === currentIndex },
-        );
-        if (!ok) {
-          // Stop at the first incomplete step.
+        if (fields.length > 0) {
+          const triggered = await form.trigger(
+            fields as (keyof FullFormData)[],
+            { shouldFocus: i === currentIndex },
+          );
+          if (!triggered) {
+            goToStep(stepId);
+            return;
+          }
+        }
+        if (!validateStep(stepId)) {
           goToStep(stepId);
           return;
         }
@@ -186,7 +243,7 @@ export function SubmitForm({
       }
       goToStep(target);
     },
-    [currentIndex, form, goToStep],
+    [currentIndex, form, goToStep, validateStep],
   );
 
   return (

@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { YesNoField } from "@/components/form/yes-no-field";
 import { YES_NO_INPROGRESS, type FullFormData } from "@/lib/form-schema";
+import { OptionalTag } from "../step-setter";
 
 export function DivorceDiscovery() {
   const form = useFormContext<FullFormData>();
@@ -25,7 +26,7 @@ export function DivorceDiscovery() {
         name="divorce_bothSpousesOnTitle"
         render={({ field, fieldState }) => (
           <FormItem>
-            <FormLabel>Are both spouses on title?</FormLabel>
+            <FormLabel>Are both spouses on title? <OptionalTag /></FormLabel>
             <FormControl>
               <YesNoField
                 value={field.value}
@@ -43,7 +44,7 @@ export function DivorceDiscovery() {
         name="divorce_divorceFinalized"
         render={({ field, fieldState }) => (
           <FormItem>
-            <FormLabel>Is the divorce finalized?</FormLabel>
+            <FormLabel>Is the divorce finalized? <OptionalTag /></FormLabel>
             <FormControl>
               <YesNoField
                 value={field.value}
@@ -62,7 +63,7 @@ export function DivorceDiscovery() {
         name="divorce_bothPartiesAgreeToSell"
         render={({ field, fieldState }) => (
           <FormItem>
-            <FormLabel>Are both parties in agreement about selling?</FormLabel>
+            <FormLabel>Are both parties in agreement about selling? <OptionalTag /></FormLabel>
             <FormControl>
               <YesNoField
                 value={field.value}
@@ -80,7 +81,7 @@ export function DivorceDiscovery() {
         name="divorce_courtOrderExists"
         render={({ field, fieldState }) => (
           <FormItem>
-            <FormLabel>Is there a court order related to the property?</FormLabel>
+            <FormLabel>Is there a court order related to the property? <OptionalTag /></FormLabel>
             <FormControl>
               <YesNoField
                 value={field.value}
@@ -99,7 +100,7 @@ export function DivorceDiscovery() {
           name="divorce_courtOrderDescription"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Briefly describe the court order</FormLabel>
+              <FormLabel>Briefly describe the court order <OptionalTag /></FormLabel>
               <FormControl>
                 <Textarea rows={3} {...field} />
               </FormControl>
@@ -114,7 +115,7 @@ export function DivorceDiscovery() {
         name="divorce_primaryContactSpouse"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Who is the primary contact — which spouse?</FormLabel>
+            <FormLabel>Who is the primary contact — which spouse? <OptionalTag /></FormLabel>
             <FormControl>
               <Input {...field} />
             </FormControl>

@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { YesNoField } from "@/components/form/yes-no-field";
 import type { FullFormData } from "@/lib/form-schema";
+import { OptionalTag } from "../step-setter";
 
 export function ProbateDiscovery() {
   const form = useFormContext<FullFormData>();
@@ -26,7 +27,7 @@ export function ProbateDiscovery() {
         name="probate_deceasedFullName"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Deceased full name</FormLabel>
+            <FormLabel>Deceased full name <OptionalTag /></FormLabel>
             <FormControl>
               <Input {...field} />
             </FormControl>
@@ -40,7 +41,7 @@ export function ProbateDiscovery() {
         name="probate_dateOfDeath"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Date of death (if known)</FormLabel>
+            <FormLabel>Date of death (if known) <OptionalTag /></FormLabel>
             <FormControl>
               <Input type="date" {...field} />
             </FormControl>
@@ -54,7 +55,7 @@ export function ProbateDiscovery() {
         name="probate_isProbateOpened"
         render={({ field, fieldState }) => (
           <FormItem>
-            <FormLabel>Is probate opened?</FormLabel>
+            <FormLabel>Is probate opened? <OptionalTag /></FormLabel>
             <FormControl>
               <YesNoField
                 value={field.value}
@@ -74,7 +75,7 @@ export function ProbateDiscovery() {
             name="probate_executorName"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Executor / personal representative name</FormLabel>
+                <FormLabel>Executor / personal representative name <OptionalTag /></FormLabel>
                 <FormControl>
                   <Input {...field} />
                 </FormControl>
@@ -87,7 +88,7 @@ export function ProbateDiscovery() {
             name="probate_executorContact"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Executor contact info</FormLabel>
+                <FormLabel>Executor contact info <OptionalTag /></FormLabel>
                 <FormControl>
                   <Input placeholder="Phone or email" {...field} />
                 </FormControl>
@@ -100,7 +101,7 @@ export function ProbateDiscovery() {
             name="probate_probateCourt"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Probate court / county</FormLabel>
+                <FormLabel>Probate court / county <OptionalTag /></FormLabel>
                 <FormControl>
                   <Input {...field} />
                 </FormControl>
@@ -116,7 +117,7 @@ export function ProbateDiscovery() {
         name="probate_willExists"
         render={({ field, fieldState }) => (
           <FormItem>
-            <FormLabel>Does a will exist?</FormLabel>
+            <FormLabel>Does a will exist? <OptionalTag /></FormLabel>
             <FormControl>
               <YesNoField
                 value={field.value}
@@ -134,7 +135,7 @@ export function ProbateDiscovery() {
         name="probate_multipleHeirs"
         render={({ field, fieldState }) => (
           <FormItem>
-            <FormLabel>Are there multiple heirs?</FormLabel>
+            <FormLabel>Are there multiple heirs? <OptionalTag /></FormLabel>
             <FormControl>
               <YesNoField
                 value={field.value}
@@ -153,7 +154,7 @@ export function ProbateDiscovery() {
           name="probate_heirsDetail"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>How many heirs, and are they in agreement about selling?</FormLabel>
+              <FormLabel>How many heirs, and are they in agreement about selling? <OptionalTag /></FormLabel>
               <FormControl>
                 <Textarea rows={3} {...field} />
               </FormControl>
@@ -168,7 +169,7 @@ export function ProbateDiscovery() {
         name="probate_outstandingLiens"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Any outstanding liens / mortgages on the property?</FormLabel>
+            <FormLabel>Any outstanding liens / mortgages on the property? <OptionalTag /></FormLabel>
             <FormControl>
               <Textarea rows={3} {...field} />
             </FormControl>

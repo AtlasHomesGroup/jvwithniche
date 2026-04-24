@@ -24,7 +24,7 @@ import {
   type PlaceSelection,
 } from "@/components/form/places-autocomplete";
 import { OCCUPANCY_OPTIONS, type FullFormData } from "@/lib/form-schema";
-import { RequiredLegend, StepHeading } from "./step-setter";
+import { OptionalTag, RequiredLegend, StepHeading } from "./step-setter";
 
 export function StepProspect() {
   const form = useFormContext<FullFormData>();
@@ -147,7 +147,7 @@ export function StepProspect() {
           name="prospectEmail"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Prospect email (optional)</FormLabel>
+              <FormLabel>Prospect email <OptionalTag /></FormLabel>
               <FormControl>
                 <Input type="email" placeholder="Leave blank if unknown" {...field} />
               </FormControl>
@@ -160,7 +160,7 @@ export function StepProspect() {
           name="prospectPhoneE164"
           render={({ field, fieldState }) => (
             <FormItem>
-              <FormLabel>Prospect best phone (optional)</FormLabel>
+              <FormLabel>Prospect best phone <OptionalTag /></FormLabel>
               <FormControl>
                 <PhoneField
                   value={field.value}
@@ -181,7 +181,7 @@ export function StepProspect() {
         name="occupancy"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Property occupancy (optional)</FormLabel>
+            <FormLabel>Property occupancy <OptionalTag /></FormLabel>
             <Select
               value={field.value ?? ""}
               onValueChange={field.onChange}
@@ -211,7 +211,7 @@ export function StepProspect() {
             name="lender"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Mortgage company / lender foreclosing</FormLabel>
+                <FormLabel>Mortgage company / lender foreclosing <OptionalTag /></FormLabel>
                 <FormControl>
                   <Input {...field} />
                 </FormControl>
@@ -224,7 +224,7 @@ export function StepProspect() {
             name="foreclosingTrustee"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Foreclosing trustee</FormLabel>
+                <FormLabel>Foreclosing trustee <OptionalTag /></FormLabel>
                 <FormControl>
                   <Input {...field} />
                 </FormControl>

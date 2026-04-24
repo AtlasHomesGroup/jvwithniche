@@ -15,11 +15,22 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { PhoneField } from "@/components/form/phone-field";
+import {
+  PlacesAutocomplete,
+  type PlaceSelection,
+} from "@/components/form/places-autocomplete";
 import type { FullFormData } from "@/lib/form-schema";
 
 export function StepSetter() {
   const form = useFormContext<FullFormData>();
   const isMember = form.watch("isNicheCommunityMember");
+
+  function applySetterPlace(place: PlaceSelection) {
+    form.setValue("address", place.street, { shouldDirty: true });
+    form.setValue("city", place.city, { shouldDirty: true });
+    form.setValue("state", place.state, { shouldDirty: true });
+    form.setValue("zip", place.zip, { shouldDirty: true });
+  }
 
   return (
     <div className="space-y-6">
@@ -62,11 +73,17 @@ export function StepSetter() {
       <FormField
         control={form.control}
         name="address"
-        render={({ field }) => (
+        render={({ field, fieldState }) => (
           <FormItem>
             <FormLabel required>Street address</FormLabel>
             <FormControl>
-              <Input autoComplete="street-address" {...field} />
+              <PlacesAutocomplete
+                value={field.value}
+                onChange={field.onChange}
+                onPlaceSelected={applySetterPlace}
+                invalid={!!fieldState.error}
+                placeholder="Start typing your address..."
+              />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -267,6 +284,16 @@ export function RequiredLegend() {
     <p className="text-[12px] text-brand-text-muted">
       Fields marked with{" "}
       <span className="font-semibold text-brand-orange">*</span> are required.
+      Other fields are optional.
     </p>
+  );
+}
+
+/** Small neutral-grey "(optional)" tag shown next to non-required labels. */
+export function OptionalTag() {
+  return (
+    <span className="ml-1 text-[11px] font-normal text-brand-text-muted">
+      (optional)
+    </span>
   );
 }

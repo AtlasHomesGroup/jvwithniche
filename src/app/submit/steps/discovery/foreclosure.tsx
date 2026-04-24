@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { YesNoField } from "@/components/form/yes-no-field";
 import type { FullFormData } from "@/lib/form-schema";
+import { OptionalTag } from "../step-setter";
 
 export function ForeclosureDiscovery() {
   const form = useFormContext<FullFormData>();
@@ -25,7 +26,7 @@ export function ForeclosureDiscovery() {
           name="foreclosure_auctionDate"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Auction date (if known)</FormLabel>
+              <FormLabel>Auction date (if known) <OptionalTag /></FormLabel>
               <FormControl>
                 <Input type="date" {...field} />
               </FormControl>
@@ -38,7 +39,7 @@ export function ForeclosureDiscovery() {
           name="foreclosure_auctionTime"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Auction time (if known)</FormLabel>
+              <FormLabel>Auction time (if known) <OptionalTag /></FormLabel>
               <FormControl>
                 <Input type="time" {...field} />
               </FormControl>
@@ -53,7 +54,7 @@ export function ForeclosureDiscovery() {
         name="foreclosure_onlyOwnerOnTitle"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Is the prospect the only owner on title?</FormLabel>
+            <FormLabel>Is the prospect the only owner on title? <OptionalTag /></FormLabel>
             <FormControl>
               <YesNoField
                 value={field.value}
@@ -71,7 +72,7 @@ export function ForeclosureDiscovery() {
           name="foreclosure_otherOwners"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Who else is on title?</FormLabel>
+              <FormLabel>Who else is on title? <OptionalTag /></FormLabel>
               <FormControl>
                 <Input {...field} />
               </FormControl>
@@ -87,7 +88,7 @@ export function ForeclosureDiscovery() {
         render={({ field }) => (
           <FormItem>
             <FormLabel>
-              Does the prospect have a recent mortgage statement?
+              Does the prospect have a recent mortgage statement? <OptionalTag />
             </FormLabel>
             <FormControl>
               <YesNoField
@@ -106,7 +107,7 @@ export function ForeclosureDiscovery() {
         render={({ field }) => (
           <FormItem>
             <FormLabel>
-              More than one mortgage? Or COVID assistance / HAF?
+              More than one mortgage? Or COVID assistance / HAF? <OptionalTag />
             </FormLabel>
             <FormControl>
               <Textarea rows={3} {...field} />
@@ -122,7 +123,8 @@ export function ForeclosureDiscovery() {
         render={({ field }) => (
           <FormItem>
             <FormLabel>
-              Did the lender ever tell them money would be put on the back end?
+              Did the lender ever tell them money would be put on the back end?{" "}
+              <OptionalTag />
             </FormLabel>
             <FormControl>
               <YesNoField
@@ -140,7 +142,7 @@ export function ForeclosureDiscovery() {
         name="foreclosure_paymentsMissed"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>How many payments missed?</FormLabel>
+            <FormLabel>How many payments missed? <OptionalTag /></FormLabel>
             <FormControl>
               <Input
                 type="number"
@@ -162,7 +164,7 @@ export function ForeclosureDiscovery() {
         name="foreclosure_hardshipReason"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Hardship reason — what caused them to fall behind?</FormLabel>
+            <FormLabel>Hardship reason — what caused them to fall behind? <OptionalTag /></FormLabel>
             <FormControl>
               <Textarea rows={4} {...field} />
             </FormControl>
@@ -177,7 +179,8 @@ export function ForeclosureDiscovery() {
         render={({ field }) => (
           <FormItem>
             <FormLabel>
-              Magic wand — reasonable outcome from their perspective?
+              Magic wand — reasonable outcome from their perspective?{" "}
+              <OptionalTag />
             </FormLabel>
             <FormControl>
               <Textarea rows={4} {...field} />

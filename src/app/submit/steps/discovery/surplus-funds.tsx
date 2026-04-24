@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { YesNoField } from "@/components/form/yes-no-field";
 import type { FullFormData } from "@/lib/form-schema";
+import { OptionalTag } from "../step-setter";
 
 export function SurplusFundsDiscovery() {
   const form = useFormContext<FullFormData>();
@@ -25,7 +26,7 @@ export function SurplusFundsDiscovery() {
           name="sf_auctionDate"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Auction / foreclosure sale date</FormLabel>
+              <FormLabel>Auction / foreclosure sale date <OptionalTag /></FormLabel>
               <FormControl>
                 <Input type="date" {...field} />
               </FormControl>
@@ -38,7 +39,7 @@ export function SurplusFundsDiscovery() {
           name="sf_estimatedSurplusAmount"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Estimated surplus funds amount</FormLabel>
+              <FormLabel>Estimated surplus funds amount <OptionalTag /></FormLabel>
               <FormControl>
                 <div className="relative">
                   <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-sm text-brand-text-muted">
@@ -110,7 +111,7 @@ export function SurplusFundsDiscovery() {
         name="sf_countyJurisdiction"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>County / jurisdiction of the foreclosure</FormLabel>
+            <FormLabel>County / jurisdiction of the foreclosure <OptionalTag /></FormLabel>
             <FormControl>
               <Input {...field} />
             </FormControl>
@@ -124,7 +125,7 @@ export function SurplusFundsDiscovery() {
         name="sf_claimTimeline"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Estimated claim processing timeline (optional)</FormLabel>
+            <FormLabel>Estimated claim processing timeline <OptionalTag /></FormLabel>
             <FormControl>
               <Textarea rows={3} {...field} />
             </FormControl>

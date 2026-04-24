@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ASSISTANCE_OPTIONS, type FullFormData } from "@/lib/form-schema";
-import { RequiredLegend, StepHeading } from "./step-setter";
+import { OptionalTag, RequiredLegend, StepHeading } from "./step-setter";
 
 export function StepNarrative() {
   const form = useFormContext<FullFormData>();
@@ -34,7 +34,7 @@ export function StepNarrative() {
         name="challenge"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Explain the specific challenge with this prospect</FormLabel>
+            <FormLabel>Explain the specific challenge with this prospect <OptionalTag /></FormLabel>
             <FormControl>
               <Textarea rows={4} {...field} />
             </FormControl>
@@ -49,7 +49,8 @@ export function StepNarrative() {
         render={({ field }) => (
           <FormItem>
             <FormLabel>
-              Summary of the prospect&apos;s situation after speaking with them
+              Summary of the prospect&apos;s situation after speaking with them{" "}
+              <OptionalTag />
             </FormLabel>
             <FormControl>
               <Textarea rows={4} {...field} />
@@ -64,7 +65,7 @@ export function StepNarrative() {
         name="equityEstimateReasoning"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Equity estimate — with specific reasoning</FormLabel>
+            <FormLabel>Equity estimate — with specific reasoning <OptionalTag /></FormLabel>
             <FormControl>
               <Textarea
                 rows={4}
@@ -141,7 +142,7 @@ export function StepNarrative() {
         name="potentialReasoning"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Why do you believe this deal has potential?</FormLabel>
+            <FormLabel>Why do you believe this deal has potential? <OptionalTag /></FormLabel>
             <FormControl>
               <Textarea rows={4} {...field} />
             </FormControl>
@@ -155,7 +156,7 @@ export function StepNarrative() {
         name="additionalInfo"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Anything else we should know?</FormLabel>
+            <FormLabel>Anything else we should know? <OptionalTag /></FormLabel>
             <FormControl>
               <Textarea rows={3} {...field} />
             </FormControl>
