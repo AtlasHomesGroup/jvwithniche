@@ -11,6 +11,8 @@ import {
   WhapiApiError,
 } from "@/lib/whatsapp/client";
 import { createSubmissionGroup } from "@/lib/whatsapp/group";
+import { sendDevAlert } from "@/lib/email/resend";
+import { whatsappGroupFailedEmail } from "@/lib/email/templates";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -220,10 +222,19 @@ async function createWhatsAppGroupForSubmission(
   } catch (err) {
     const diag =
       err instanceof WhapiApiError
-        ? { kind: "WhapiApiError", status: err.status, body: err.body.slice(0, 400) }
+        ? {
+            kind: "WhapiApiError" as const,
+            status: err.status,
+            body: err.body.slice(0, 400),
+            message: err.message,
+          }
         : err instanceof Error
-          ? { kind: err.name, message: err.message, stack: err.stack?.slice(0, 500) }
-          : { kind: "unknown", value: String(err) };
+          ? {
+              kind: err.name,
+              message: err.message,
+              stack: err.stack?.slice(0, 500),
+            }
+          : { kind: "unknown", message: String(err) };
     console.error(
       "[pandadoc webhook] whatsapp group creation failed",
       JSON.stringify({ submissionId: submission.id, ...diag }),
@@ -238,6 +249,20 @@ async function createWhatsAppGroupForSubmission(
       })
       .where(eq(submissions.id, submission.id))
       .catch(() => {});
-    // Failure-alert email lands in commit 3.
+    // Email Michael / ops so they can fall back to SMS / phone.
+    try {
+      const { subject, html, text } = whatsappGroupFailedEmail(submission, {
+        kind: diag.kind,
+        message: "message" in diag ? diag.message : undefined,
+        status: "status" in diag ? diag.status : undefined,
+        body: "body" in diag ? diag.body : undefined,
+      });
+      await sendDevAlert({ subject, html, text });
+    } catch (alertErr) {
+      console.warn(
+        "[pandadoc webhook] failed to send whatsapp-failure alert",
+        alertErr,
+      );
+    }
   }
 }
