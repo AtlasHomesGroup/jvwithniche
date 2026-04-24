@@ -116,6 +116,15 @@ export async function POST(req: Request) {
     let esignProvider: "pandadoc" | "jotform" | null = null;
     let esignError: string | null = null;
 
+    console.info(
+      "[submit] pandadoc check",
+      JSON.stringify({
+        hasApiKey: Boolean(process.env.PANDADOC_API_KEY),
+        hasTemplate: Boolean(process.env.PANDADOC_TEMPLATE_ID),
+        templatePrefix: (process.env.PANDADOC_TEMPLATE_ID ?? "").slice(0, 6),
+      }),
+    );
+
     if (hasPandadocTemplate()) {
       try {
         const doc = await createDocument({
@@ -128,24 +137,48 @@ export async function POST(req: Request) {
             deal_type: formData.dealType ?? "",
           },
         });
+        console.info(
+          "[submit] pandadoc doc created",
+          JSON.stringify({ id: doc.id, status: doc.status }),
+        );
         // Poll briefly until the doc leaves "document.uploaded" — sending
         // a doc still in "uploaded" returns 400. In practice this takes
         // well under a second from a template; cap at 6 short tries.
         await sendDocument(doc.id, { silent: true }).catch(async (err) => {
           if (err instanceof PandaDocApiError && err.status === 400) {
-            // give PandaDoc a moment to finish processing the doc
+            console.warn(
+              "[submit] pandadoc send retry after 400",
+              JSON.stringify({
+                docId: doc.id,
+                body: err.body.slice(0, 300),
+              }),
+            );
             await new Promise((r) => setTimeout(r, 1200));
             await sendDocument(doc.id, { silent: true });
           } else {
             throw err;
           }
         });
+        console.info("[submit] pandadoc doc sent", doc.id);
         esignDocumentId = doc.id;
         esignProvider = "pandadoc";
       } catch (err) {
         // Non-fatal: we still want the submission persisted so the user
         // doesn't lose their data. The /sign page will show the error.
-        console.error("[submit] pandadoc create/send failed", err);
+        const diag =
+          err instanceof PandaDocApiError
+            ? {
+                kind: "PandaDocApiError",
+                status: err.status,
+                body: err.body.slice(0, 500),
+              }
+            : err instanceof Error
+              ? { kind: err.name, message: err.message, stack: err.stack?.slice(0, 500) }
+              : { kind: "unknown", value: String(err) };
+        console.error(
+          "[submit] pandadoc create/send failed",
+          JSON.stringify(diag),
+        );
         esignError =
           err instanceof PandaDocApiError
             ? `PandaDoc ${err.status}`
