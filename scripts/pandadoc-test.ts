@@ -15,7 +15,9 @@
 
 import {
   createDocument,
+  createEmbedSession,
   getDocumentStatus,
+  sendDocument,
 } from "@/lib/pandadoc/client";
 import {
   buildMergeTokens,
@@ -52,7 +54,8 @@ function sample(): FullFormData {
     occupancy: "Owner-occupied",
     lender: "Chase Bank",
     foreclosingTrustee: "Trustee LLC",
-    dealType: "Pre-foreclosure",
+    dealType: "Foreclosure",
+    urgencyScale: 7,
     challenge: "Seller is 4 months behind, auction in 3 weeks, needs to sell fast.",
     situationSummary: "Sarah lost her job, fell behind, wants to walk away clean.",
     equityEstimateReasoning: "Balance ~$180K, Zillow avg $320K, clean title. Est ~$140K equity.",
@@ -185,6 +188,31 @@ async function main() {
       .filter(Boolean)
       .join(" ") || "unassigned";
     console.log(`    • ${f.name}  (role: "${role}", signer: ${who})`);
+  }
+
+  // Try the full send + embed flow if requested (set RUN_SEND=1). This
+  // is what happens on a real user submission and exercises the paid-tier
+  // external-email restriction on production keys.
+  if (process.env.RUN_SEND === "1") {
+    console.log("\n▶ Sending (silent) — tests prod-tier external email send");
+    try {
+      const sent = await sendDocument(doc.id, { silent: true });
+      console.log(`  Sent. Status: ${sent.status}`);
+    } catch (err) {
+      console.log(`  Send failed:`, (err as Error).message);
+    }
+
+    console.log("\n▶ Opening embed session");
+    try {
+      const session = await createEmbedSession(
+        doc.id,
+        sample().email,
+        600,
+      );
+      console.log(`  Session URL: https://app.pandadoc.com/s/${session.id}`);
+    } catch (err) {
+      console.log(`  Session failed:`, (err as Error).message);
+    }
   }
 
   // Clean up the test doc so the user's workspace stays tidy.
