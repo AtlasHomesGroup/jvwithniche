@@ -19,6 +19,7 @@ import {
 } from "@/lib/form-schema";
 import {
   createDocument,
+  getDocumentStatus,
   hasTemplate as hasPandadocTemplate,
   sendDocument,
   PandaDocApiError,
@@ -141,24 +142,39 @@ export async function POST(req: Request) {
           "[submit] pandadoc doc created",
           JSON.stringify({ id: doc.id, status: doc.status }),
         );
-        // Poll briefly until the doc leaves "document.uploaded" — sending
-        // a doc still in "uploaded" returns 400. In practice this takes
-        // well under a second from a template; cap at 6 short tries.
-        await sendDocument(doc.id, { silent: true }).catch(async (err) => {
-          if (err instanceof PandaDocApiError && err.status === 400) {
-            console.warn(
-              "[submit] pandadoc send retry after 400",
-              JSON.stringify({
-                docId: doc.id,
-                body: err.body.slice(0, 300),
-              }),
-            );
-            await new Promise((r) => setTimeout(r, 1200));
-            await sendDocument(doc.id, { silent: true });
-          } else {
-            throw err;
-          }
-        });
+
+        // Poll the doc's status until it leaves "document.uploaded".
+        // PandaDoc refuses to send while the doc is still processing (which
+        // returns 400 with "document must be in `document.draft` state").
+        // From a template this is typically <2s; cap at ~8s total.
+        for (let i = 0; i < 6; i++) {
+          if (i > 0) await new Promise((r) => setTimeout(r, 1200));
+          const s = await getDocumentStatus(doc.id);
+          console.info(
+            "[submit] pandadoc poll",
+            JSON.stringify({ attempt: i, status: s.status }),
+          );
+          if (s.status !== "document.uploaded") break;
+        }
+
+        // Now safe to send. Still wrap in retry to be defensive against
+        // transient 400s ("still uploading").
+        try {
+          await sendDocument(doc.id, { silent: true });
+        } catch (sendErr) {
+          const status =
+            sendErr instanceof PandaDocApiError ? sendErr.status : null;
+          const body =
+            sendErr instanceof PandaDocApiError
+              ? sendErr.body.slice(0, 300)
+              : String(sendErr);
+          console.warn(
+            "[submit] pandadoc send failed; retrying",
+            JSON.stringify({ docId: doc.id, status, body }),
+          );
+          await new Promise((r) => setTimeout(r, 1500));
+          await sendDocument(doc.id, { silent: true });
+        }
         console.info("[submit] pandadoc doc sent", doc.id);
         esignDocumentId = doc.id;
         esignProvider = "pandadoc";
