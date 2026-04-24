@@ -206,7 +206,7 @@ async function main() {
     try {
       const session = await createEmbedSession(
         doc.id,
-        sample().email,
+        String(sample().email ?? ""),
         600,
       );
       console.log(`  Session URL: https://app.pandadoc.com/s/${session.id}`);
