@@ -2,10 +2,15 @@ import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 
 import { db } from "@/db/client";
-import { submissions } from "@/db/schema";
+import { submissions, type Submission } from "@/db/schema";
 import { downloadSignedPdf } from "@/lib/pandadoc/client";
 import { verifyPandaDocSignature } from "@/lib/pandadoc/verify";
 import { uploadSignedPdf } from "@/lib/blob-storage";
+import {
+  isConfigured as whatsappConfigured,
+  WhapiApiError,
+} from "@/lib/whatsapp/client";
+import { createSubmissionGroup } from "@/lib/whatsapp/group";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -144,7 +149,7 @@ async function processEvent(event: PandaDocWebhookEvent): Promise<void> {
   });
 
   const now = new Date();
-  await db
+  const [updated] = await db
     .update(submissions)
     .set({
       signedAt: now,
@@ -153,7 +158,8 @@ async function processEvent(event: PandaDocWebhookEvent): Promise<void> {
       updatedAt: now,
       lastActivityAt: now,
     })
-    .where(eq(submissions.id, submission.id));
+    .where(eq(submissions.id, submission.id))
+    .returning();
 
   console.info(
     "[pandadoc webhook] signed + archived",
@@ -161,7 +167,77 @@ async function processEvent(event: PandaDocWebhookEvent): Promise<void> {
     stored.url,
   );
 
-  // CRM push + WhatsApp group creation land in M4 (src/app/api/cron/crm-retry
-  // and the WhatsApp provider wiring). The status change above is enough to
-  // queue the submission for that worker.
+  // Kick off WhatsApp group creation (and, when M4a lands, the CRM push)
+  // in parallel so neither blocks the other. Failures are non-fatal —
+  // the submission is already persisted; the team can fall back to
+  // direct outreach if WhatsApp isn't reachable.
+  await Promise.allSettled([
+    createWhatsAppGroupForSubmission(updated),
+    // M4a placeholder — CRM push goes here once Niche CRM gives us the
+    // webhook URL + auth.
+  ]);
+}
+
+async function createWhatsAppGroupForSubmission(
+  submission: Submission,
+): Promise<void> {
+  if (!whatsappConfigured()) {
+    console.info(
+      "[pandadoc webhook] whatsapp skipped — WHAPI_API_KEY not set",
+      submission.id,
+    );
+    return;
+  }
+  if (submission.whatsappGroupCreated && submission.whatsappGroupId) {
+    console.info(
+      "[pandadoc webhook] whatsapp group already exists",
+      JSON.stringify({
+        submissionId: submission.id,
+        groupId: submission.whatsappGroupId,
+      }),
+    );
+    return;
+  }
+  try {
+    const result = await createSubmissionGroup(submission);
+    await db
+      .update(submissions)
+      .set({
+        whatsappGroupCreated: true,
+        whatsappGroupId: result.groupId,
+        whatsappGroupInviteLink: result.inviteLink,
+        updatedAt: new Date(),
+      })
+      .where(eq(submissions.id, submission.id));
+    console.info(
+      "[pandadoc webhook] whatsapp group created",
+      JSON.stringify({
+        submissionId: submission.id,
+        groupId: result.groupId,
+        memberCount: result.participants.length,
+      }),
+    );
+  } catch (err) {
+    const diag =
+      err instanceof WhapiApiError
+        ? { kind: "WhapiApiError", status: err.status, body: err.body.slice(0, 400) }
+        : err instanceof Error
+          ? { kind: err.name, message: err.message, stack: err.stack?.slice(0, 500) }
+          : { kind: "unknown", value: String(err) };
+    console.error(
+      "[pandadoc webhook] whatsapp group creation failed",
+      JSON.stringify({ submissionId: submission.id, ...diag }),
+    );
+    // Mark explicitly as not-created so the admin view can surface it
+    // and the team can manually reach out via SMS / phone instead.
+    await db
+      .update(submissions)
+      .set({
+        whatsappGroupCreated: false,
+        updatedAt: new Date(),
+      })
+      .where(eq(submissions.id, submission.id))
+      .catch(() => {});
+    // Failure-alert email lands in commit 3.
+  }
 }
