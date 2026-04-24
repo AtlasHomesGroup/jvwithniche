@@ -198,3 +198,20 @@ export function getGroupInviteLink(
     `/groups/${encodeURIComponent(groupId)}/invite`,
   );
 }
+
+/**
+ * Set a group's display picture. Whapi expects the image as either a
+ * publicly-reachable URL or a base64 data-uri on the `media` field.
+ */
+export function setGroupIcon(
+  groupId: string,
+  mediaUrl: string,
+): Promise<{ success?: boolean }> {
+  return request<{ success?: boolean }>(
+    `/groups/${encodeURIComponent(groupId)}/icon`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ media: mediaUrl }),
+    },
+  );
+}

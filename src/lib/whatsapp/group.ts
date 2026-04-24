@@ -5,9 +5,17 @@ import {
   normalizePhone,
   sendDocument,
   sendTextMessage,
+  setGroupIcon,
 } from "./client";
 import type { Submission } from "@/db/schema";
 import { formatSubmissionForWhatsapp } from "@/lib/submission-view";
+
+const DEFAULT_GROUP_ICON_URL =
+  "https://ik.imagekit.io/ldqszfymv/Niche%20Mastermind/niche-icon.png";
+
+function groupIconUrl(): string {
+  return process.env.WHAPI_GROUP_ICON_URL?.trim() || DEFAULT_GROUP_ICON_URL;
+}
 
 const TEAM_ENV_KEYS = [
   "NICHE_WHATSAPP_TEAM_1",
@@ -31,13 +39,12 @@ export function nicheTeamNumbers(): string[] {
 export function buildGroupName(
   s: Pick<Submission, "propertyStreet" | "propertyCity" | "propertyState">,
 ): string {
-  const street = s.propertyStreet?.trim() || "Property TBD";
-  const city = s.propertyCity?.trim();
-  const state = s.propertyState?.trim();
-  const tail = [city, state].filter(Boolean).join(" ");
-  return tail
-    ? `Niche JV — ${street}, ${tail}`
-    : `Niche JV — ${street}`;
+  const parts = [
+    s.propertyStreet?.trim() || "Property TBD",
+    s.propertyCity?.trim(),
+    s.propertyState?.trim(),
+  ].filter(Boolean);
+  return `JV with NICHE: ${parts.join(", ")}`;
 }
 
 function siteUrl(): string {
@@ -69,7 +76,6 @@ export function buildWelcomeMessage(submission: Submission): string {
     .join(", ") || "your submission";
 
   const summary = formatSubmissionForWhatsapp(submission);
-  const link = buildViewLink(submission);
 
   return [
     `Hi ${firstName}! Thanks for submitting *${propertyLine}* for JV with Niche. Michael and our acquisitions team are reviewing your submission and will jump in here shortly to discuss next steps.`,
@@ -77,9 +83,18 @@ export function buildWelcomeMessage(submission: Submission): string {
     "_Here's what we have on file so far:_",
     "",
     summary,
+  ].join("\n");
+}
+
+/** Standalone WhatsApp message containing just the view link — sent as
+ *  its own message so WhatsApp renders it as a clickable URL card. */
+export function buildViewLinkMessage(submission: Submission): string {
+  const link = buildViewLink(submission);
+  return [
+    `🔗 Your JV submission portal:`,
+    link,
     "",
-    `📎 Signed JV agreement: ${link}`,
-    `🔖 Bookmark this link — it's your private record of the submission and the signed contract.`,
+    `Use this link to download the signed agreement, add notes, or upload supporting documents at any time. Bookmark it — it's private to you.`,
   ].join("\n");
 }
 
@@ -121,7 +136,20 @@ export async function createSubmissionGroup(
   const created = await createGroup({ subject, participants });
   const groupId = created.id;
 
-  // Step 2 — post the welcome message (full form summary + view link)
+  // Step 2 — set the Niche logo as the group picture (best-effort).
+  try {
+    await setGroupIcon(groupId, groupIconUrl());
+  } catch (err) {
+    console.warn(
+      "[whatsapp] group icon set failed (non-fatal)",
+      JSON.stringify({
+        groupId,
+        message: err instanceof Error ? err.message : String(err),
+      }),
+    );
+  }
+
+  // Step 3 — post the welcome message (full form summary, no URL).
   const welcome = buildWelcomeMessage(submission);
   try {
     await sendTextMessage({ to: groupId, body: welcome });
@@ -135,7 +163,24 @@ export async function createSubmissionGroup(
     );
   }
 
-  // Step 3 — attach the signed JV agreement PDF (best-effort). The Whapi
+  // Step 4 — send the view link as its own message so WhatsApp renders it
+  // as a clickable URL card.
+  try {
+    await sendTextMessage({
+      to: groupId,
+      body: buildViewLinkMessage(submission),
+    });
+  } catch (err) {
+    console.warn(
+      "[whatsapp] view-link message send failed (non-fatal)",
+      JSON.stringify({
+        groupId,
+        message: err instanceof Error ? err.message : String(err),
+      }),
+    );
+  }
+
+  // Step 5 — attach the signed JV agreement PDF (best-effort). The Whapi
   // server fetches the file from our /api/pdf/[token] proxy, which in turn
   // reads from the private Vercel Blob.
   if (submission.signedPdfUrl) {
@@ -160,7 +205,7 @@ export async function createSubmissionGroup(
     }
   }
 
-  // Step 4 — try to fetch the invite link (best-effort)
+  // Step 6 — try to fetch the invite link (best-effort)
   let inviteLink: string | null = null;
   try {
     const inv = await getGroupInviteLink(groupId);
