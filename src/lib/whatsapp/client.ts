@@ -102,6 +102,19 @@ export interface SendTextMessageInput {
   body: string;
 }
 
+export interface SendDocumentInput {
+  /** Group chat id from CreatedGroup.id, or a participant's wa-id */
+  to: string;
+  /** Publicly-reachable URL that Whapi can fetch the file from. */
+  mediaUrl: string;
+  /** Displayed filename inside WhatsApp. */
+  filename: string;
+  /** Optional caption shown beneath the attachment. */
+  caption?: string;
+  /** Mime type — defaults to application/pdf. */
+  mimeType?: string;
+}
+
 export interface SentMessage {
   message?: {
     id: string;
@@ -153,6 +166,27 @@ export function sendTextMessage(
     body: JSON.stringify({
       to: input.to,
       body: input.body,
+    }),
+  });
+}
+
+/**
+ * Posts a file attachment (PDF, image, etc.) to a chat via Whapi. The
+ * `mediaUrl` must be a URL Whapi's servers can GET without auth — for our
+ * signed JV agreement that's `/api/pdf/[token]` which proxies the private
+ * Vercel Blob.
+ */
+export function sendDocument(
+  input: SendDocumentInput,
+): Promise<SentMessage> {
+  return request<SentMessage>("/messages/document", {
+    method: "POST",
+    body: JSON.stringify({
+      to: input.to,
+      media: input.mediaUrl,
+      filename: input.filename,
+      caption: input.caption ?? "",
+      mime_type: input.mimeType ?? "application/pdf",
     }),
   });
 }

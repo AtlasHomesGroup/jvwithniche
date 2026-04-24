@@ -35,6 +35,7 @@ export default async function SignPage({
       esignProvider: submissions.esignProvider,
       esignDocumentId: submissions.esignDocumentId,
       submitterEmail: submissions.submitterEmail,
+      returnLinkToken: submissions.returnLinkToken,
     })
     .from(submissions)
     .where(eq(submissions.id, draftId))
@@ -49,6 +50,7 @@ export default async function SignPage({
     submission.status === "crm_synced" ||
     submission.signedAt
   ) {
+    const viewHref = `/view/${submission.returnLinkToken}`;
     return (
       <SignLayout
         eyebrow="Signed"
@@ -60,6 +62,9 @@ export default async function SignPage({
         </p>
         <div className="mt-6 flex flex-col gap-3 sm:flex-row">
           <Button asChild>
+            <Link href={viewHref}>View your submission & agreement</Link>
+          </Button>
+          <Button asChild variant="outline">
             <Link href="/">Back to landing</Link>
           </Button>
         </div>
@@ -116,7 +121,11 @@ export default async function SignPage({
       description="Your info has been merged into the agreement. Signing takes 2–3 clicks — you stay on this page the whole time."
     >
       {sessionUrl ? (
-        <SigningFrame sessionUrl={sessionUrl} submissionId={submission.id} />
+        <SigningFrame
+          sessionUrl={sessionUrl}
+          submissionId={submission.id}
+          viewHref={`/view/${submission.returnLinkToken}`}
+        />
       ) : (
         <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-6 text-sm">
           <p className="font-medium text-destructive">

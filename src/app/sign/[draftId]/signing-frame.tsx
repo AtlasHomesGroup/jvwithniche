@@ -20,9 +20,11 @@ const PANDADOC_ORIGIN = "https://app.pandadoc.com";
 export function SigningFrame({
   sessionUrl,
   submissionId,
+  viewHref,
 }: {
   sessionUrl: string;
   submissionId: string;
+  viewHref: string;
 }) {
   const [status, setStatus] = useState<"signing" | "completed" | "exception">(
     "signing",
@@ -46,7 +48,7 @@ export function SigningFrame({
   }, []);
 
   if (status === "completed") {
-    return <CompletedView submissionId={submissionId} />;
+    return <CompletedView submissionId={submissionId} viewHref={viewHref} />;
   }
 
   return (
@@ -71,7 +73,13 @@ export function SigningFrame({
   );
 }
 
-function CompletedView({ submissionId }: { submissionId: string }) {
+function CompletedView({
+  submissionId,
+  viewHref,
+}: {
+  submissionId: string;
+  viewHref: string;
+}) {
   return (
     <div className="rounded-2xl border border-brand-navy/10 bg-white p-6 shadow-[0_8px_30px_rgba(27,58,92,0.06)] sm:p-5">
       <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-brand-orange-light text-brand-orange">
@@ -106,8 +114,11 @@ function CompletedView({ submissionId }: { submissionId: string }) {
         </ol>
       </div>
 
-      <div className="mt-6">
+      <div className="mt-6 flex flex-col gap-3 sm:flex-row">
         <Button asChild>
+          <Link href={viewHref}>View your submission & agreement</Link>
+        </Button>
+        <Button asChild variant="outline">
           <Link href="/">Back to landing</Link>
         </Button>
       </div>
@@ -127,7 +138,8 @@ function CompletedView({ submissionId }: { submissionId: string }) {
           >
             support@nichecrm.ai
           </a>
-          .
+          . Your private view link above is also bookmarkable and will update
+          once Michael counter-signs.
         </p>
       </div>
     </div>

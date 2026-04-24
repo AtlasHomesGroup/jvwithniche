@@ -3,9 +3,11 @@ import {
   getGroupInviteLink,
   isConfigured,
   normalizePhone,
+  sendDocument,
   sendTextMessage,
 } from "./client";
 import type { Submission } from "@/db/schema";
+import { formatSubmissionForWhatsapp } from "@/lib/submission-view";
 
 const TEAM_ENV_KEYS = [
   "NICHE_WHATSAPP_TEAM_1",
@@ -38,13 +40,47 @@ export function buildGroupName(
     : `Niche JV — ${street}`;
 }
 
-export function buildWelcomeMessage(s: {
-  setterFirstName: string;
-  propertyFullAddress: string;
-}): string {
-  const name = s.setterFirstName.trim() || "there";
-  const addr = s.propertyFullAddress.trim() || "your submission";
-  return `Hi ${name}! Thanks for submitting ${addr} for JV with Niche. Michael and our acquisitions team are reviewing your submission and will jump in here shortly to discuss next steps.`;
+function siteUrl(): string {
+  return (
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    (process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : "https://jvwithniche.com")
+  );
+}
+
+export function buildViewLink(submission: Submission): string {
+  return `${siteUrl().replace(/\/$/, "")}/view/${submission.returnLinkToken}`;
+}
+
+export function buildWelcomeMessage(submission: Submission): string {
+  const fd = (submission.formData as { firstName?: unknown } | null) ?? {};
+  const firstName =
+    typeof fd.firstName === "string" && fd.firstName.trim()
+      ? fd.firstName.trim()
+      : "there";
+  const propertyLine = [
+    submission.propertyStreet,
+    submission.propertyCity,
+    submission.propertyState,
+  ]
+    .map((v) => (v ?? "").trim())
+    .filter(Boolean)
+    .join(", ") || "your submission";
+
+  const summary = formatSubmissionForWhatsapp(submission);
+  const link = buildViewLink(submission);
+
+  return [
+    `Hi ${firstName}! Thanks for submitting *${propertyLine}* for JV with Niche. Michael and our acquisitions team are reviewing your submission and will jump in here shortly to discuss next steps.`,
+    "",
+    "_Here's what we have on file so far:_",
+    "",
+    summary,
+    "",
+    `📎 Signed JV agreement: ${link}`,
+    `🔖 Bookmark this link — it's your private record of the submission and the signed contract.`,
+  ].join("\n");
 }
 
 /**
@@ -80,30 +116,13 @@ export async function createSubmissionGroup(
   const participants = [...teamNumbers, submitterPhone].map(normalizePhone);
 
   const subject = buildGroupName(submission);
-  // ZIP isn't a denormalized column — pull from form_data jsonb.
-  const fd = submission.formData as
-    | { propertyZip?: unknown }
-    | null;
-  const zip = typeof fd?.propertyZip === "string" ? fd.propertyZip : "";
-  const propertyFullAddress = [
-    submission.propertyStreet,
-    submission.propertyCity,
-    submission.propertyState,
-    zip,
-  ]
-    .map((s) => (s ?? "").trim())
-    .filter(Boolean)
-    .join(", ");
 
   // Step 1 — create the group with all members
   const created = await createGroup({ subject, participants });
   const groupId = created.id;
 
-  // Step 2 — post the welcome message
-  const welcome = buildWelcomeMessage({
-    setterFirstName: extractFirstName(submission),
-    propertyFullAddress,
-  });
+  // Step 2 — post the welcome message (full form summary + view link)
+  const welcome = buildWelcomeMessage(submission);
   try {
     await sendTextMessage({ to: groupId, body: welcome });
   } catch (err) {
@@ -116,7 +135,32 @@ export async function createSubmissionGroup(
     );
   }
 
-  // Step 3 — try to fetch the invite link (best-effort)
+  // Step 3 — attach the signed JV agreement PDF (best-effort). The Whapi
+  // server fetches the file from our /api/pdf/[token] proxy, which in turn
+  // reads from the private Vercel Blob.
+  if (submission.signedPdfUrl) {
+    const pdfUrl = `${siteUrl().replace(/\/$/, "")}/api/pdf/${submission.returnLinkToken}`;
+    const filename = buildPdfFilename(submission);
+    try {
+      await sendDocument({
+        to: groupId,
+        mediaUrl: pdfUrl,
+        filename,
+        caption: "Signed JV agreement",
+      });
+    } catch (err) {
+      console.warn(
+        "[whatsapp] PDF attachment send failed (non-fatal)",
+        JSON.stringify({
+          groupId,
+          submissionId: submission.id,
+          message: err instanceof Error ? err.message : String(err),
+        }),
+      );
+    }
+  }
+
+  // Step 4 — try to fetch the invite link (best-effort)
   let inviteLink: string | null = null;
   try {
     const inv = await getGroupInviteLink(groupId);
@@ -137,11 +181,12 @@ export async function createSubmissionGroup(
   return { groupId, inviteLink, participants };
 }
 
-function extractFirstName(submission: Submission): string {
-  // The denormalized columns don't include firstName, but it's in form_data.
-  const fd = submission.formData as
-    | { firstName?: unknown }
-    | null;
-  const v = fd?.firstName;
-  return typeof v === "string" ? v : "";
+function buildPdfFilename(s: Submission): string {
+  const slug = [s.propertyStreet, s.propertyCity, s.propertyState]
+    .map((v) => (v ?? "").trim())
+    .filter(Boolean)
+    .join("-")
+    .replace(/[^a-zA-Z0-9._-]+/g, "-")
+    .slice(0, 80);
+  return slug ? `JV-Agreement-${slug}.pdf` : `JV-Agreement-${s.id}.pdf`;
 }

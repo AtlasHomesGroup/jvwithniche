@@ -12,13 +12,18 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ASSISTANCE_OPTIONS, type FullFormData } from "@/lib/form-schema";
+import {
+  assistanceOptionsForDealType,
+  type FullFormData,
+} from "@/lib/form-schema";
 import { OptionalTag, RequiredLegend, StepHeading } from "./step-setter";
 
 export function StepNarrative() {
   const form = useFormContext<FullFormData>();
   const assistance = form.watch("assistanceRequested") ?? [];
+  const dealType = form.watch("dealType");
   const hasOther = assistance.includes("Other");
+  const visibleOptions = assistanceOptionsForDealType(dealType);
 
   return (
     <div className="space-y-6">
@@ -89,7 +94,7 @@ export function StepNarrative() {
                 className="grid gap-3 sm:grid-cols-1 md:grid-cols-2"
                 aria-invalid={!!fieldState.error}
               >
-                {ASSISTANCE_OPTIONS.map((option) => {
+                {visibleOptions.map((option) => {
                   const selected = (field.value ?? []).includes(option);
                   const id = `assistance-${option.replace(/\s/g, "-")}`;
                   return (

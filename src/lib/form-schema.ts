@@ -67,8 +67,28 @@ export const ASSISTANCE_OPTIONS = [
   "Paperwork assistance",
   "Close the deal",
   "Bring financing",
+  "Stop foreclosure",
   "Other",
 ] as const;
+
+/** Assistance options that only make sense for specific deal types. */
+export const DEAL_TYPE_ONLY_ASSISTANCE: Partial<
+  Record<DealType, ReadonlyArray<(typeof ASSISTANCE_OPTIONS)[number]>>
+> = {
+  Foreclosure: ["Stop foreclosure"],
+};
+
+/** Returns the assistance options that should be shown for a given deal type. */
+export function assistanceOptionsForDealType(
+  dealType: DealType | undefined,
+): ReadonlyArray<(typeof ASSISTANCE_OPTIONS)[number]> {
+  return ASSISTANCE_OPTIONS.filter((opt) => {
+    for (const [key, exclusive] of Object.entries(DEAL_TYPE_ONLY_ASSISTANCE)) {
+      if (exclusive?.includes(opt) && key !== dealType) return false;
+    }
+    return true;
+  });
+}
 
 /* ─────────────────────────────────────────────────────────────
    Reusable field validators
