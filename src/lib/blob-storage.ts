@@ -32,3 +32,32 @@ export async function uploadSignedPdf({
     cacheControlMaxAge: 60 * 60 * 24 * 365,
   });
 }
+
+/**
+ * Upload a follow-up attachment that a JV partner added via the /view
+ * portal. Paths are namespaced by submission + update id so collisions
+ * are impossible and admins can see every file for a given JV in one
+ * prefix.
+ */
+export async function uploadJvAttachment({
+  submissionId,
+  updateId,
+  file,
+  filename,
+  contentType,
+}: {
+  submissionId: string;
+  updateId: string;
+  file: Blob | ArrayBuffer | Uint8Array;
+  filename: string;
+  contentType: string;
+}): Promise<PutBlobResult> {
+  const safeName = filename.replace(/[^a-zA-Z0-9._-]+/g, "-").slice(0, 160);
+  const pathname = `submissions/${submissionId}/attachments/${updateId}/${safeName}`;
+  return put(pathname, file as Blob, {
+    access: "private",
+    contentType,
+    addRandomSuffix: false,
+    cacheControlMaxAge: 60 * 60 * 24 * 365,
+  });
+}

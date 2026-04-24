@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { eq } from "drizzle-orm";
-import { CheckCircle2, FileText } from "lucide-react";
+import { desc, eq } from "drizzle-orm";
+import { CheckCircle2, Download, FileText } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { db } from "@/db/client";
-import { submissions } from "@/db/schema";
+import { submissions, submissionUpdates } from "@/db/schema";
 import { renderSubmissionSections } from "@/lib/submission-view";
+import { UpdatePanel } from "./update-panel";
+import { UpdateHistory, type UpdateRow } from "./update-history";
 
 export const metadata = {
   title: "Your JV submission · JV With Niche",
@@ -50,6 +52,26 @@ export default async function ViewSubmissionPage({
       })
     : null;
 
+  const updates = await db
+    .select({
+      id: submissionUpdates.id,
+      createdAt: submissionUpdates.createdAt,
+      updateType: submissionUpdates.updateType,
+      payload: submissionUpdates.payload,
+      crmSynced: submissionUpdates.crmSynced,
+    })
+    .from(submissionUpdates)
+    .where(eq(submissionUpdates.submissionId, submission.id))
+    .orderBy(desc(submissionUpdates.createdAt));
+
+  const historyRows: UpdateRow[] = updates.map((u) => ({
+    id: u.id,
+    createdAt: u.createdAt.toISOString(),
+    updateType: u.updateType,
+    payload: u.payload as UpdateRow["payload"],
+    crmSynced: u.crmSynced,
+  }));
+
   return (
     <div className="mx-auto max-w-4xl px-6 py-10 sm:px-4 sm:py-8">
       <header className="mb-8">
@@ -69,23 +91,25 @@ export default async function ViewSubmissionPage({
       </header>
 
       {pdfHref ? (
-        <section className="mb-10 overflow-hidden rounded-xl border border-brand-navy/10 bg-white shadow-[0_8px_30px_rgba(27,58,92,0.06)]">
-          <div className="flex items-center justify-between gap-3 border-b border-brand-navy/10 px-5 py-3 sm:flex-col sm:items-start">
-            <div className="flex items-center gap-2 text-sm font-semibold text-brand-navy">
-              <FileText className="h-4 w-4 text-brand-orange" aria-hidden />
-              Signed JV agreement
+        <section className="mb-10 flex items-center justify-between gap-4 rounded-xl border border-brand-navy/10 bg-white p-5 shadow-[0_8px_30px_rgba(27,58,92,0.06)] sm:flex-col sm:items-start">
+          <div className="flex items-center gap-3">
+            <div className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-brand-orange-light text-brand-orange">
+              <FileText className="h-5 w-5" aria-hidden />
             </div>
-            <Button asChild variant="outline" size="sm">
-              <a href={pdfHref} target="_blank" rel="noopener noreferrer">
-                Open / download PDF
-              </a>
-            </Button>
+            <div>
+              <p className="text-sm font-semibold text-brand-navy">
+                Signed JV agreement
+              </p>
+              <p className="text-[12px] text-brand-text-muted">
+                PDF · downloadable
+              </p>
+            </div>
           </div>
-          <iframe
-            title="Signed JV agreement"
-            src={pdfHref}
-            className="block h-[760px] w-full md:h-[820px]"
-          />
+          <Button asChild>
+            <a href={pdfHref} target="_blank" rel="noopener noreferrer">
+              <Download className="mr-2 h-4 w-4" aria-hidden /> Download PDF
+            </a>
+          </Button>
         </section>
       ) : (
         <section className="mb-10 rounded-xl border border-dashed border-brand-navy/20 bg-brand-cream/60 p-6 text-sm text-brand-text-muted">
@@ -95,15 +119,34 @@ export default async function ViewSubmissionPage({
         </section>
       )}
 
+      <section className="mb-10">
+        <h2 className="mb-3 text-[11px] font-bold uppercase tracking-[0.14em] text-brand-navy">
+          Add an update
+        </h2>
+        <UpdatePanel token={token} crmSynced={!!submission.crmOpportunityId} />
+      </section>
+
+      {historyRows.length > 0 && (
+        <section className="mb-10">
+          <h2 className="mb-3 text-[11px] font-bold uppercase tracking-[0.14em] text-brand-navy">
+            Your updates
+          </h2>
+          <UpdateHistory token={token} rows={historyRows} />
+        </section>
+      )}
+
       <div className="space-y-4">
+        <h2 className="text-[11px] font-bold uppercase tracking-[0.14em] text-brand-navy">
+          Submission details
+        </h2>
         {sections.map((section) => (
           <section
             key={section.title}
             className="rounded-xl border border-brand-navy/10 bg-white p-4 sm:p-3"
           >
-            <h2 className="mb-3 text-[11px] font-bold uppercase tracking-[0.14em] text-brand-navy">
+            <h3 className="mb-3 text-[11px] font-bold uppercase tracking-[0.14em] text-brand-navy">
               {section.title}
-            </h2>
+            </h3>
             <dl className="space-y-2.5">
               {section.rows.map(({ label, value, multiline }) => (
                 <SummaryRow
@@ -120,8 +163,8 @@ export default async function ViewSubmissionPage({
 
       <div className="mt-10 flex flex-col gap-3 rounded-lg border border-brand-navy/10 bg-brand-cream/60 p-5 sm:flex-row sm:items-center sm:justify-between">
         <div className="text-sm text-brand-text-muted">
-          Need to send us an update or an attachment? Reply in your WhatsApp
-          group with the Niche acquisitions team, or email{" "}
+          Questions? Reply in your WhatsApp group with the Niche acquisitions
+          team, or email{" "}
           <a
             href="mailto:support@nichecrm.ai"
             className="underline hover:text-brand-orange"
@@ -162,4 +205,3 @@ function SummaryRow({
     </div>
   );
 }
-

@@ -35,17 +35,19 @@ export function isConfigured(): boolean {
 }
 
 export interface CrmLeadFields {
-  attributes: { type: "Lead__c" };
-  First_Name__c: string;
-  Full_Name__c: string;
+  attributes: { type: "Lead__c"; url?: string };
+  /** Present only on follow-up pushes — identifies the existing Lead. */
+  Id?: string;
+  First_Name__c?: string;
+  Full_Name__c?: string;
   Email__c?: string;
   Phone__c?: string;
-  Address__c: string;
-  Type__c: string;
-  Entity_Type__c: string;
-  Source__c: string;
-  Status__c: string;
-  Is_Website_Data__c: boolean;
+  Address__c?: string;
+  Type__c?: string;
+  Entity_Type__c?: string;
+  Source__c?: string;
+  Status__c?: string;
+  Is_Website_Data__c?: boolean;
   Auction_Date__c?: string;
 }
 

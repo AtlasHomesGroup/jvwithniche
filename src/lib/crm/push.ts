@@ -262,3 +262,83 @@ async function enqueueRetry(input: {
 }
 
 export { BACKOFF_MS, MAX_ATTEMPTS };
+
+export interface FollowUpInput {
+  note?: { title: string; body: string };
+  file?: { filename: string; contentType: string; base64: string };
+}
+
+export interface FollowUpOutcome {
+  ok: boolean;
+  rawBody?: string;
+  reason?: string;
+}
+
+/**
+ * Post a follow-up (note or file) against an existing CRM Lead. Uses the
+ * same `jvRequest` endpoint with `requestObject.Id` set so the Apex method
+ * can detect an update-case and append notes/files to the existing Lead.
+ *
+ * Only pushes when the submission has a stored `crmOpportunityId`; when
+ * that's null the caller should persist the update locally and the CRM
+ * sync will catch up once the initial push succeeds.
+ */
+export async function pushFollowUpToCrm(
+  submission: Submission,
+  input: FollowUpInput,
+): Promise<FollowUpOutcome> {
+  if (!isConfigured()) {
+    return { ok: false, reason: "CRM_ENDPOINT_URL not set" };
+  }
+  if (!submission.crmOpportunityId) {
+    return {
+      ok: false,
+      reason: "submission has no crmOpportunityId yet — skipping follow-up push",
+    };
+  }
+  if (!input.note && !input.file) {
+    return { ok: false, reason: "nothing to push" };
+  }
+
+  const payload = {
+    requestObject: {
+      attributes: {
+        type: "Lead__c" as const,
+        url: `/services/data/v65.0/sobjects/Lead__c/${submission.crmOpportunityId}`,
+      },
+      Id: submission.crmOpportunityId,
+    },
+    description: "",
+    notes: input.note ? [input.note] : [],
+    files: input.file ? [input.file] : [],
+  };
+
+  try {
+    const res = await pushToCrm(payload);
+    console.info(
+      "[crm] follow-up push succeeded",
+      JSON.stringify({
+        submissionId: submission.id,
+        leadId: submission.crmOpportunityId,
+        kind: input.note ? "note" : "file",
+      }),
+    );
+    return { ok: true, rawBody: res.rawBody };
+  } catch (err) {
+    const reason =
+      err instanceof CrmApiError
+        ? `CrmApiError ${err.status}: ${err.body.slice(0, 200)}`
+        : err instanceof Error
+          ? `${err.name}: ${err.message}`
+          : String(err);
+    console.error(
+      "[crm] follow-up push failed",
+      JSON.stringify({
+        submissionId: submission.id,
+        leadId: submission.crmOpportunityId,
+        reason,
+      }),
+    );
+    return { ok: false, reason };
+  }
+}
