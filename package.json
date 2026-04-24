@@ -14,7 +14,8 @@
     "db:studio": "drizzle-kit studio",
     "pandadoc:ping": "node --env-file=.env.local --import tsx scripts/pandadoc-ping.ts",
     "pandadoc:test": "node --env-file=.env.local --import tsx scripts/pandadoc-test.ts",
-    "whapi:ping": "node --env-file=.env.local --import tsx scripts/whapi-ping.ts"
+    "whapi:ping": "node --env-file=.env.local --import tsx scripts/whapi-ping.ts",
+    "crm:test": "node --env-file=.env.local --import tsx scripts/crm-test.ts"
   },
   "dependencies": {
     "@googlemaps/js-api-loader": "^2.0.2",

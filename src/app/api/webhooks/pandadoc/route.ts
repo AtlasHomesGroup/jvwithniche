@@ -11,6 +11,7 @@ import {
   WhapiApiError,
 } from "@/lib/whatsapp/client";
 import { createSubmissionGroup } from "@/lib/whatsapp/group";
+import { pushSubmissionToCrm } from "@/lib/crm/push";
 import { sendDevAlert } from "@/lib/email/resend";
 import { whatsappGroupFailedEmail } from "@/lib/email/templates";
 
@@ -169,14 +170,20 @@ async function processEvent(event: PandaDocWebhookEvent): Promise<void> {
     stored.url,
   );
 
-  // Kick off WhatsApp group creation (and, when M4a lands, the CRM push)
-  // in parallel so neither blocks the other. Failures are non-fatal —
-  // the submission is already persisted; the team can fall back to
-  // direct outreach if WhatsApp isn't reachable.
+  // Kick off WhatsApp group creation + CRM push in parallel so neither
+  // blocks the other. Failures on either side are non-fatal — the
+  // submission is already persisted; the team has the admin view + dev
+  // alerts to recover manually, and the CRM push self-enqueues for retry.
   await Promise.allSettled([
     createWhatsAppGroupForSubmission(updated),
-    // M4a placeholder — CRM push goes here once Niche CRM gives us the
-    // webhook URL + auth.
+    pushSubmissionToCrm(updated).catch((err) => {
+      // pushSubmissionToCrm catches its own errors, but we add a safety
+      // net here so an unexpected throw can't abort other settled calls.
+      console.error(
+        "[pandadoc webhook] unexpected CRM push throw",
+        err instanceof Error ? err.message : String(err),
+      );
+    }),
   ]);
 }
 

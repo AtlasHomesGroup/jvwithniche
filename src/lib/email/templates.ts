@@ -155,6 +155,70 @@ function extractFullName(s: Submission): string {
   return [first, last].filter(Boolean).join(" ") || "—";
 }
 
+export function crmPushFailedEmail(
+  s: Submission,
+  err: {
+    kind: string;
+    message?: string;
+    status?: number;
+    body?: string;
+    attempt: number;
+    permanent?: boolean;
+  },
+): { subject: string; html: string; text: string } {
+  const subject = err.permanent
+    ? `[JV] CRM push FAILED permanently · ${propertyLine(s)}`
+    : `[JV] CRM push failed (will retry) · ${propertyLine(s)}`;
+  const adminLink = `${siteUrl()}/admin/submissions/${s.id}`;
+  const errorLine =
+    err.kind === "CrmApiError"
+      ? `Salesforce ${err.status ?? "?"}: ${(err.body ?? "").slice(0, 280)}`
+      : `${err.kind}${err.message ? `: ${err.message}` : ""}`;
+  const retryLine = err.permanent
+    ? "Max retries reached — the submission is still at crm_sync_pending. Please push it manually from the admin view once the CRM issue is resolved."
+    : `Attempt ${err.attempt} failed; the retry cron (every 5 min) will try again.`;
+
+  const html = shell(
+    `<h1 style="margin:0 0 8px;color:${NICHE_NAVY};font-size:20px;font-weight:600;">CRM push ${err.permanent ? "permanently failed" : "failed"}</h1>
+<p style="margin:0 0 16px;color:${NICHE_MUTED};font-size:14px;line-height:1.5;">${escapeHtml(retryLine)}</p>
+<table cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;">
+${row("Setter email", s.submitterEmail ?? "")}
+${row("Setter phone", s.submitterPhoneE164 ?? "")}
+${row("Property", propertyLine(s))}
+${row("Deal type", s.dealType ?? "")}
+${row("Submission id", s.id)}
+${row("Attempt", String(err.attempt))}
+${row("Error", errorLine)}
+</table>
+<div style="margin-top:20px;">
+  <a href="${escapeHtml(adminLink)}" style="display:inline-block;padding:10px 18px;background:${NICHE_NAVY};color:#ffffff;text-decoration:none;border-radius:999px;font-size:13px;font-weight:600;">
+    Open in admin view
+  </a>
+</div>`,
+    err.permanent
+      ? `CRM push permanently failed for ${propertyLine(s)} after ${err.attempt} attempts.`
+      : `CRM push failed for ${propertyLine(s)} — retrying automatically.`,
+  );
+
+  const text = [
+    `CRM push ${err.permanent ? "permanently failed" : "failed"}`,
+    "",
+    retryLine,
+    "",
+    `Setter email: ${s.submitterEmail ?? "—"}`,
+    `Setter phone: ${s.submitterPhoneE164 ?? "—"}`,
+    `Property: ${propertyLine(s)}`,
+    `Deal type: ${s.dealType ?? "—"}`,
+    `Submission id: ${s.id}`,
+    `Attempt: ${err.attempt}`,
+    `Error: ${errorLine}`,
+    "",
+    `Admin: ${adminLink}`,
+  ].join("\n");
+
+  return { subject, html, text };
+}
+
 export function autoDeletedDigestEmail(rows: Submission[]): {
   subject: string;
   html: string;
