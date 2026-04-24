@@ -13,7 +13,20 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
+/**
+ * Stalled-alert threshold. Tunable via STALLED_ALERT_THRESHOLD_MINUTES env
+ * var — e.g. 30 for 30 min, 1440 for 24h. Defaults to 120 (2h).
+ *
+ * Auto-delete runs at a fixed 7-day-idle threshold (retention policy is
+ * more sensitive than alert timing — changing it needs a code review).
+ */
+function stalledThresholdMs(): number {
+  const raw = process.env.STALLED_ALERT_THRESHOLD_MINUTES;
+  const minutes = raw ? Number(raw) : NaN;
+  if (!Number.isFinite(minutes) || minutes <= 0) return 2 * 60 * 60 * 1000;
+  return minutes * 60 * 1000;
+}
+
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
 /**
@@ -55,7 +68,7 @@ function isAuthorized(req: Request): boolean {
 }
 
 async function runStalledAlerts(): Promise<Submission[]> {
-  const cutoff = new Date(Date.now() - TWO_HOURS_MS);
+  const cutoff = new Date(Date.now() - stalledThresholdMs());
 
   const stalled = await db
     .select()

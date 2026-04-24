@@ -1,14 +1,18 @@
 import Link from "next/link";
-import { ExternalLink } from "lucide-react";
+import { Download, ExternalLink } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 import { DEAL_TYPES } from "@/lib/form-schema";
 import {
   ALL_STATUSES,
+  listSavedFiltersFor,
   listSubmissions,
   type SubmissionStatus,
 } from "@/lib/admin/queries";
+import { requireAdminSession } from "@/lib/admin/session";
 import { StatusBadge } from "../_components/status-badge";
 import { FilterBar } from "./_components/filter-bar";
+import { SavedFilters } from "./_components/saved-filters";
 
 export const metadata = {
   title: "Submissions · Admin",
@@ -29,6 +33,7 @@ export default async function AdminSubmissionsPage({
 }: {
   searchParams: Promise<Search>;
 }) {
+  const admin = await requireAdminSession();
   const sp = await searchParams;
   const status = ALL_STATUSES.includes(sp.status as SubmissionStatus)
     ? (sp.status as SubmissionStatus)
@@ -40,14 +45,21 @@ export default async function AdminSubmissionsPage({
   const page = Math.max(1, Number(sp.page ?? "1") || 1);
   const pageSize = 25;
 
-  const { rows, total } = await listSubmissions({
-    status,
-    dealType,
-    search,
-    page,
-    pageSize,
-  });
+  const [{ rows, total }, savedFilters] = await Promise.all([
+    listSubmissions({
+      status,
+      dealType,
+      search,
+      page,
+      pageSize,
+    }),
+    listSavedFiltersFor(admin.id),
+  ]);
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
+  const currentUrl = buildCurrentUrl(sp);
+  const csvUrl = buildCsvUrl(sp);
+  const hasFiltersApplied = hasFilters(sp);
 
   return (
     <div className="space-y-5">
@@ -58,15 +70,31 @@ export default async function AdminSubmissionsPage({
           </h1>
           <p className="mt-1 text-sm text-brand-text-muted">
             {total.toLocaleString()} {total === 1 ? "submission" : "submissions"}{" "}
-            {hasFilters(sp) ? "match your filters" : "in the portal"}.
+            {hasFiltersApplied ? "match your filters" : "in the portal"}.
           </p>
         </div>
+        <Button asChild size="sm" variant="outline">
+          <a href={csvUrl} download>
+            <Download className="mr-2 h-4 w-4" aria-hidden />
+            Export CSV
+          </a>
+        </Button>
       </header>
 
       <FilterBar
         initialStatus={status ?? ""}
         initialDealType={dealType ?? ""}
         initialSearch={search}
+      />
+
+      <SavedFilters
+        initial={savedFilters.map((f) => ({
+          id: f.id,
+          name: f.name,
+          url: f.url,
+        }))}
+        currentUrl={currentUrl}
+        currentHasFilters={hasFiltersApplied}
       />
 
       <div className="overflow-hidden rounded-xl border border-brand-navy/10 bg-white">
@@ -160,6 +188,27 @@ export default async function AdminSubmissionsPage({
 
 function hasFilters(sp: Search): boolean {
   return Boolean(sp.status || sp.dealType || (sp.q && sp.q.trim()));
+}
+
+function buildCurrentUrl(sp: Search): string {
+  const qs = new URLSearchParams();
+  if (sp.status) qs.set("status", sp.status);
+  if (sp.dealType) qs.set("dealType", sp.dealType);
+  if (sp.q) qs.set("q", sp.q);
+  if (sp.page && sp.page !== "1") qs.set("page", sp.page);
+  const s = qs.toString();
+  return s ? `/admin/submissions?${s}` : "/admin/submissions";
+}
+
+function buildCsvUrl(sp: Search): string {
+  const qs = new URLSearchParams();
+  if (sp.status) qs.set("status", sp.status);
+  if (sp.dealType) qs.set("dealType", sp.dealType);
+  if (sp.q) qs.set("q", sp.q);
+  const s = qs.toString();
+  return s
+    ? `/api/admin/submissions/export.csv?${s}`
+    : "/api/admin/submissions/export.csv";
 }
 
 function IntegrationDot({

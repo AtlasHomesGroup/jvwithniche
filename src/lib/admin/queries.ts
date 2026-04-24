@@ -3,10 +3,12 @@ import { and, count, desc, eq, ilike, or, sql } from "drizzle-orm";
 import { db } from "@/db/client";
 import {
   adminActions,
+  adminSavedFilters,
   crmSyncQueue,
   submissions,
   submissionUpdates,
   type AdminAction,
+  type AdminSavedFilter,
   type Submission,
   type SubmissionUpdate,
 } from "@/db/schema";
@@ -244,6 +246,17 @@ export async function listAdminActions(
     page,
     pageSize,
   };
+}
+
+/** Saved filter presets for one admin, newest first. */
+export async function listSavedFiltersFor(
+  adminId: string,
+): Promise<AdminSavedFilter[]> {
+  return db
+    .select()
+    .from(adminSavedFilters)
+    .where(eq(adminSavedFilters.adminUserId, adminId))
+    .orderBy(desc(adminSavedFilters.createdAt));
 }
 
 /** All audit rows for a single submission, newest first. */

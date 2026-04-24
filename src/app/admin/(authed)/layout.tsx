@@ -44,9 +44,12 @@ export default async function AuthedAdminLayout({
           </nav>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-[12px] text-brand-text-muted">
+          <Link
+            href="/admin/profile"
+            className="text-[12px] text-brand-text-muted hover:text-brand-orange"
+          >
             {user.email}
-          </span>
+          </Link>
           <LogoutButton />
         </div>
       </header>

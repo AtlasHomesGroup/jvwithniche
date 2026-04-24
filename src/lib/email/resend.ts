@@ -9,7 +9,8 @@ function getClient(): Resend | null {
 }
 
 const DEFAULT_FROM =
-  process.env.DEV_ALERT_FROM ?? "Niche JV Alerts <onboarding@resend.dev>";
+  process.env.DEV_ALERT_FROM ??
+  "Niche JV Alerts <alerts@jvwithniche.com>";
 
 export async function sendDevAlert({
   to,

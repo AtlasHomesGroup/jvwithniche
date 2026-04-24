@@ -153,8 +153,31 @@ export const adminUsers = pgTable(
       .notNull(),
     lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
     disabled: boolean("disabled").default(false).notNull(),
+    // Sessions with issuedAt < this are rejected at verify-time — lets us
+    // invalidate every outstanding session for a given admin ("sign me out
+    // everywhere") without rotating the global session secret.
+    sessionsValidFrom: timestamp("sessions_valid_from", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
   },
   (t) => [uniqueIndex("admin_users_email_idx").on(t.email)],
+);
+
+export const adminSavedFilters = pgTable(
+  "admin_saved_filters",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    adminUserId: uuid("admin_user_id")
+      .notNull()
+      .references(() => adminUsers.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    // Path + query string, e.g. "/admin/submissions?status=crm_sync_pending"
+    url: text("url").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [index("admin_saved_filters_admin_idx").on(t.adminUserId)],
 );
 
 export const adminActions = pgTable(
@@ -193,3 +216,5 @@ export type CrmSyncQueueItem = typeof crmSyncQueue.$inferSelect;
 export type AdminUser = typeof adminUsers.$inferSelect;
 export type AdminAction = typeof adminActions.$inferSelect;
 export type NewAdminAction = typeof adminActions.$inferInsert;
+export type AdminSavedFilter = typeof adminSavedFilters.$inferSelect;
+export type NewAdminSavedFilter = typeof adminSavedFilters.$inferInsert;
