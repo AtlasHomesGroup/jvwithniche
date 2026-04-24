@@ -8,6 +8,13 @@
       "when": 1776904846724,
       "tag": "0000_initial",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1777060757735,
+      "tag": "0001_flowery_scarlet_witch",
+      "breakpoints": true
     }
   ]
 }

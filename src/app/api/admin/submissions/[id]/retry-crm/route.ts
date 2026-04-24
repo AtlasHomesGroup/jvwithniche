@@ -5,6 +5,7 @@ import { badRequest, serverError, unauthorized } from "@/lib/api";
 import { db } from "@/db/client";
 import { submissions } from "@/db/schema";
 import { getAdminSession } from "@/lib/admin/session";
+import { logAdminAction } from "@/lib/admin/audit";
 import { pushSubmissionToCrm } from "@/lib/crm/push";
 
 export const runtime = "nodejs";
@@ -34,6 +35,16 @@ export async function POST(
     if (!submission) return badRequest("submission not found");
 
     const outcome = await pushSubmissionToCrm(submission);
+    await logAdminAction({
+      admin,
+      actionType: "retry_crm",
+      submissionId: submission.id,
+      details: {
+        outcome: outcome.kind,
+        reason: outcome.reason ?? null,
+        crmOpportunityId: outcome.crmOpportunityId ?? null,
+      },
+    });
     return NextResponse.json({
       ok: true,
       outcome,

@@ -2,9 +2,11 @@ import { and, count, desc, eq, ilike, or, sql } from "drizzle-orm";
 
 import { db } from "@/db/client";
 import {
+  adminActions,
   crmSyncQueue,
   submissions,
   submissionUpdates,
+  type AdminAction,
   type Submission,
   type SubmissionUpdate,
 } from "@/db/schema";
@@ -185,6 +187,74 @@ export async function getRecentSubmissions(
     .from(submissions)
     .orderBy(desc(submissions.createdAt))
     .limit(limit);
+}
+
+export interface AuditListFilters {
+  actionType?: string;
+  adminEmail?: string;
+  submissionId?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface AuditListResult {
+  rows: AdminAction[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+/** Paginated list of admin audit actions, newest first. */
+export async function listAdminActions(
+  filters: AuditListFilters = {},
+): Promise<AuditListResult> {
+  const page = Math.max(1, filters.page ?? 1);
+  const pageSize = Math.min(100, Math.max(1, filters.pageSize ?? 50));
+  const offset = (page - 1) * pageSize;
+
+  const conditions = [];
+  if (filters.actionType && filters.actionType.trim()) {
+    conditions.push(eq(adminActions.actionType, filters.actionType.trim()));
+  }
+  if (filters.adminEmail && filters.adminEmail.trim()) {
+    conditions.push(eq(adminActions.adminEmail, filters.adminEmail.trim()));
+  }
+  if (filters.submissionId) {
+    conditions.push(eq(adminActions.submissionId, filters.submissionId));
+  }
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+  const [rows, countRow] = await Promise.all([
+    db
+      .select()
+      .from(adminActions)
+      .where(whereClause)
+      .orderBy(desc(adminActions.createdAt))
+      .limit(pageSize)
+      .offset(offset),
+    db
+      .select({ count: count().as("count") })
+      .from(adminActions)
+      .where(whereClause),
+  ]);
+
+  return {
+    rows,
+    total: countRow[0]?.count ?? 0,
+    page,
+    pageSize,
+  };
+}
+
+/** All audit rows for a single submission, newest first. */
+export async function listAuditForSubmission(
+  submissionId: string,
+): Promise<AdminAction[]> {
+  return db
+    .select()
+    .from(adminActions)
+    .where(eq(adminActions.submissionId, submissionId))
+    .orderBy(desc(adminActions.createdAt));
 }
 
 /** Submissions with outstanding CRM failures — for the dashboard alert rail. */

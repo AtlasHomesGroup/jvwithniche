@@ -35,6 +35,12 @@ export default async function AuthedAdminLayout({
             >
               Submissions
             </Link>
+            <Link
+              href="/admin/audit-log"
+              className="text-brand-text-dark hover:text-brand-orange"
+            >
+              Audit log
+            </Link>
           </nav>
         </div>
         <div className="flex items-center gap-3">

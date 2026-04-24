@@ -9,10 +9,16 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { getSubmissionDetail } from "@/lib/admin/queries";
+import {
+  getSubmissionDetail,
+  listAuditForSubmission,
+} from "@/lib/admin/queries";
 import { renderSubmissionSections } from "@/lib/submission-view";
 import { StatusBadge } from "../../_components/status-badge";
+import { ActionBadge } from "../../audit-log/_components/action-badge";
 import { RetryCrmButton } from "./_components/retry-crm-button";
+import { ResendSigningButton } from "./_components/resend-signing-button";
+import { DeleteButton } from "./_components/delete-button";
 
 export const metadata = {
   title: "Submission · Admin",
@@ -29,11 +35,15 @@ export default async function AdminSubmissionDetailPage({
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
 
-  const detail = await getSubmissionDetail(id);
+  const [detail, auditRows] = await Promise.all([
+    getSubmissionDetail(id),
+    listAuditForSubmission(id),
+  ]);
   if (!detail) notFound();
 
   const { submission: s, updates, queueRow } = detail;
   const sections = renderSubmissionSections(s);
+  const propertyLabel = propertyLine(s) || s.id;
 
   const viewLink = `/view/${s.returnLinkToken}`;
   const pdfHref = s.signedPdfUrl ? `/api/pdf/${s.returnLinkToken}` : null;
@@ -188,6 +198,23 @@ export default async function AdminSubmissionDetailPage({
         </div>
       </section>
 
+      <section className="rounded-xl border border-brand-navy/10 bg-white p-4">
+        <h2 className="mb-3 text-[11px] font-bold uppercase tracking-[0.14em] text-brand-navy">
+          Admin actions
+        </h2>
+        <div className="flex flex-wrap items-center gap-3">
+          {s.status === "awaiting_signature" && s.esignDocumentId && (
+            <ResendSigningButton submissionId={s.id} />
+          )}
+          <DeleteButton submissionId={s.id} label={propertyLabel} />
+        </div>
+        <p className="mt-2 text-[11px] text-brand-text-muted">
+          Resend signing email is only shown while the submission is awaiting
+          signature. Delete is permanent — removes all linked notes,
+          attachments, and signed PDFs from Blob storage.
+        </p>
+      </section>
+
       {updates.length > 0 && (
         <section>
           <h2 className="mb-3 text-[11px] font-bold uppercase tracking-[0.14em] text-brand-navy">
@@ -200,6 +227,35 @@ export default async function AdminSubmissionDetailPage({
                 token={s.returnLinkToken}
                 update={u}
               />
+            ))}
+          </ol>
+        </section>
+      )}
+
+      {auditRows.length > 0 && (
+        <section>
+          <h2 className="mb-3 text-[11px] font-bold uppercase tracking-[0.14em] text-brand-navy">
+            Admin activity ({auditRows.length})
+          </h2>
+          <ol className="space-y-2">
+            {auditRows.map((row) => (
+              <li
+                key={row.id}
+                className="flex items-start justify-between gap-3 rounded-xl border border-brand-navy/10 bg-white p-3 text-[13px]"
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <ActionBadge actionType={row.actionType} />
+                    <span className="text-[11px] text-brand-text-muted">
+                      {formatDateTime(row.createdAt)}
+                    </span>
+                  </div>
+                  <p className="mt-1 truncate text-[12px] text-brand-text-muted">
+                    by {row.adminEmail} ·{" "}
+                    {JSON.stringify(row.details).slice(0, 200)}
+                  </p>
+                </div>
+              </li>
             ))}
           </ol>
         </section>

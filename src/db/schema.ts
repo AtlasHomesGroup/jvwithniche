@@ -157,9 +157,39 @@ export const adminUsers = pgTable(
   (t) => [uniqueIndex("admin_users_email_idx").on(t.email)],
 );
 
+export const adminActions = pgTable(
+  "admin_actions",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    // Nullable so deleting an admin user preserves the audit trail.
+    adminUserId: uuid("admin_user_id").references(() => adminUsers.id, {
+      onDelete: "set null",
+    }),
+    // Denormalized email — survives admin-row deletion.
+    adminEmail: text("admin_email").notNull(),
+    // Nullable so deleting a submission preserves the audit trail.
+    submissionId: uuid("submission_id").references(() => submissions.id, {
+      onDelete: "set null",
+    }),
+    // Free-text so new action types don't require a migration.
+    actionType: text("action_type").notNull(),
+    details: jsonb("details").notNull().default(sql`'{}'::jsonb`),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    index("admin_actions_created_idx").on(t.createdAt),
+    index("admin_actions_submission_idx").on(t.submissionId),
+    index("admin_actions_admin_idx").on(t.adminUserId),
+  ],
+);
+
 export type Submission = typeof submissions.$inferSelect;
 export type NewSubmission = typeof submissions.$inferInsert;
 export type SubmissionUpdate = typeof submissionUpdates.$inferSelect;
 export type NewSubmissionUpdate = typeof submissionUpdates.$inferInsert;
 export type CrmSyncQueueItem = typeof crmSyncQueue.$inferSelect;
 export type AdminUser = typeof adminUsers.$inferSelect;
+export type AdminAction = typeof adminActions.$inferSelect;
+export type NewAdminAction = typeof adminActions.$inferInsert;
