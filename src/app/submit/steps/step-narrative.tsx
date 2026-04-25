@@ -30,7 +30,7 @@ export function StepNarrative() {
       <StepHeading
         eyebrow="Step 4 · Deal narrative"
         title="Tell us the story."
-        description="The more context, the better — but only one thing here is required. Everything else is optional."
+        description="The more context, the better - but only one thing here is required. Everything else is optional."
       />
       <RequiredLegend />
 
@@ -70,7 +70,7 @@ export function StepNarrative() {
         name="equityEstimateReasoning"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Equity estimate — with specific reasoning <OptionalTag /></FormLabel>
+            <FormLabel>Equity estimate - with specific reasoning <OptionalTag /></FormLabel>
             <FormControl>
               <Textarea
                 rows={4}
@@ -132,7 +132,7 @@ export function StepNarrative() {
           name="assistanceOther"
           render={({ field }) => (
             <FormItem>
-              <FormLabel required>Other assistance — describe</FormLabel>
+              <FormLabel required>Other assistance - describe</FormLabel>
               <FormControl>
                 <Input {...field} />
               </FormControl>

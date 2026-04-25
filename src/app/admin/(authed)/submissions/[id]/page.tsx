@@ -160,7 +160,7 @@ export default async function AdminSubmissionDetailPage({
             {queueRow.lastError ?? "(no error recorded)"}
           </p>
           <p className="mt-1 text-[12px] text-brand-text-muted">
-            Last attempt {queueRow.lastAttemptAt ? formatDateTime(queueRow.lastAttemptAt) : "—"} ·
+            Last attempt {queueRow.lastAttemptAt ? formatDateTime(queueRow.lastAttemptAt) : "-"} ·
             next retry {formatDateTime(queueRow.nextAttemptAt)}
           </p>
         </section>
@@ -210,7 +210,7 @@ export default async function AdminSubmissionDetailPage({
         </div>
         <p className="mt-2 text-[11px] text-brand-text-muted">
           Resend signing email is only shown while the submission is awaiting
-          signature. Delete is permanent — removes all linked notes,
+          signature. Delete is permanent - removes all linked notes,
           attachments, and signed PDFs from Blob storage.
         </p>
       </section>
@@ -290,7 +290,7 @@ export default async function AdminSubmissionDetailPage({
                           : "text-brand-text-dark"
                       }
                     >
-                      {r.value || "—"}
+                      {r.value || "-"}
                     </dd>
                   </div>
                 ))}

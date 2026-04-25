@@ -41,7 +41,7 @@ export function AutosaveIndicator({
       {status === "error" && (
         <>
           <CircleAlert className="h-3.5 w-3.5" aria-hidden="true" />
-          Couldn&apos;t save — we&apos;ll retry
+          Couldn&apos;t save - we&apos;ll retry
         </>
       )}
     </span>

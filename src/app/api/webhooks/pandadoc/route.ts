@@ -76,7 +76,7 @@ export async function POST(req: Request) {
       await processEvent(event);
       processed.push(`${event.event}:${event.data?.id ?? "?"}`);
     } catch (err) {
-      // Log and continue — PandaDoc retries failed deliveries, but other
+      // Log and continue - PandaDoc retries failed deliveries, but other
       // events in the same batch shouldn't be held up by one bad row.
       const diag = {
         event: event.event,
@@ -136,7 +136,7 @@ async function processEvent(event: PandaDocWebhookEvent): Promise<void> {
     event.data?.status === "document.completed";
   if (!isComplete) return;
 
-  // Already processed — PandaDoc retries deliveries on failure, so treat
+  // Already processed - PandaDoc retries deliveries on failure, so treat
   // duplicates as no-ops.
   if (submission.signedAt && submission.signedPdfUrl) {
     console.info("[pandadoc webhook] already processed", docId);
@@ -171,7 +171,7 @@ async function processEvent(event: PandaDocWebhookEvent): Promise<void> {
   );
 
   // Kick off WhatsApp group creation + CRM push in parallel so neither
-  // blocks the other. Failures on either side are non-fatal — the
+  // blocks the other. Failures on either side are non-fatal - the
   // submission is already persisted; the team has the admin view + dev
   // alerts to recover manually, and the CRM push self-enqueues for retry.
   await Promise.allSettled([
@@ -192,7 +192,7 @@ async function createWhatsAppGroupForSubmission(
 ): Promise<void> {
   if (!whatsappConfigured()) {
     console.info(
-      "[pandadoc webhook] whatsapp skipped — WHAPI_API_KEY not set",
+      "[pandadoc webhook] whatsapp skipped - WHAPI_API_KEY not set",
       submission.id,
     );
     return;

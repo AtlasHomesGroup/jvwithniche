@@ -20,7 +20,7 @@ export const dynamic = "force-dynamic";
  *   3. Log the action (audit row survives because admin_actions.submission_id
  *      is ON DELETE SET NULL, not cascade).
  *
- * No soft-delete — the user explicitly asked for a way to wipe test data.
+ * No soft-delete - the user explicitly asked for a way to wipe test data.
  */
 export async function POST(
   _req: Request,
@@ -80,7 +80,7 @@ export async function POST(
     await logAdminAction({
       admin,
       actionType: "delete_submission",
-      // Intentional null — the FK set-null avoids breaking the audit row.
+      // Intentional null - the FK set-null avoids breaking the audit row.
       submissionId: null,
       details: {
         deletedSubmissionId: id,

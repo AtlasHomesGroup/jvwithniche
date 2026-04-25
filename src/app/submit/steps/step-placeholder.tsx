@@ -23,7 +23,7 @@ export function StepPlaceholder({
       <StepHeading
         eyebrow={`Step ${stepNumber} · ${stepTitle}`}
         title="Coming up in the next build."
-        description={`${milestone} will wire this step. Your draft so far is saved — you can come back at any time within 7 days.`}
+        description={`${milestone} will wire this step. Your draft so far is saved - you can come back at any time within 7 days.`}
       />
       <div className="rounded-lg border border-dashed border-border bg-brand-cream/50 p-6 text-sm text-brand-text-muted">
         <p>

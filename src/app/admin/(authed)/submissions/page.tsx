@@ -123,7 +123,7 @@ export default async function AdminSubmissionsPage({
                   </div>
                 </Td>
                 <Td>
-                  <div className="truncate">{row.submitterEmail ?? "—"}</div>
+                  <div className="truncate">{row.submitterEmail ?? "-"}</div>
                   <div className="text-[11px] text-brand-text-muted">
                     {row.submitterPhoneE164 ?? ""}
                   </div>
@@ -131,7 +131,7 @@ export default async function AdminSubmissionsPage({
                 <Td className="max-w-[260px]">
                   <div className="truncate">{propertyLine(row)}</div>
                 </Td>
-                <Td>{row.dealType ?? "—"}</Td>
+                <Td>{row.dealType ?? "-"}</Td>
                 <Td>
                   <StatusBadge status={row.status} />
                 </Td>

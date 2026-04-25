@@ -14,7 +14,7 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/** GET — hydrate the form on page load. Creates a new draft + cookie if none. */
+/** GET - hydrate the form on page load. Creates a new draft + cookie if none. */
 export async function GET() {
   try {
     const token = await readDraftCookie();
@@ -34,8 +34,8 @@ export async function GET() {
 }
 
 /**
- * PATCH / POST — merge a partial form-data payload into the current draft.
- * The client sends only changed values (or the whole watched form — the
+ * PATCH / POST - merge a partial form-data payload into the current draft.
+ * The client sends only changed values (or the whole watched form - the
  * server merges field-by-field either way).
  */
 const patchBodySchema = z.object({
@@ -61,7 +61,7 @@ async function handleWrite(req: Request) {
 
     const updated = await updateDraft(token, parsed.data.formData);
     if (!updated) {
-      // Cookie pointed at a non-existent draft — spin up a new one and
+      // Cookie pointed at a non-existent draft - spin up a new one and
       // merge this payload into it so we don't lose user input.
       const { draft } = await getOrCreateDraft(undefined);
       const merged = await updateDraft(

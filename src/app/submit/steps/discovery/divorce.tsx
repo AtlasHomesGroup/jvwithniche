@@ -115,7 +115,7 @@ export function DivorceDiscovery() {
         name="divorce_primaryContactSpouse"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Who is the primary contact — which spouse? <OptionalTag /></FormLabel>
+            <FormLabel>Who is the primary contact - which spouse? <OptionalTag /></FormLabel>
             <FormControl>
               <Input {...field} />
             </FormControl>

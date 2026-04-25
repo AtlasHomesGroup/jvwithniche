@@ -59,10 +59,10 @@ export function ScaleField({
       </div>
       <div className="flex items-center justify-between text-[11px] text-brand-text-muted">
         <span>
-          <span className="font-semibold text-brand-navy">{min}</span> — {lowLabel}
+          <span className="font-semibold text-brand-navy">{min}</span> - {lowLabel}
         </span>
         <span>
-          <span className="font-semibold text-brand-navy">{max}</span> — {highLabel}
+          <span className="font-semibold text-brand-navy">{max}</span> - {highLabel}
         </span>
       </div>
     </div>

@@ -1,11 +1,11 @@
 @import "tailwindcss";
 
 /* ─────────────────────────────────────────────────────────────
-   Niche brand palette — mirrors nichecrm.ai tailwind.config.ts
+   Niche brand palette - mirrors nichecrm.ai tailwind.config.ts
    ───────────────────────────────────────────────────────────── */
 
 :root {
-  /* Brand tokens — use directly via Tailwind color classes (below) */
+  /* Brand tokens - use directly via Tailwind color classes (below) */
   --brand-cream: #faf5f0;
   --brand-cream-deep: #f9f1ea;
   --brand-orange: #e8640a;
@@ -114,7 +114,7 @@
 }
 
 /* ─────────────────────────────────────────────────────────────
-   Reveal-on-scroll animations — copied from nichecrm.ai
+   Reveal-on-scroll animations - copied from nichecrm.ai
    ───────────────────────────────────────────────────────────── */
 
 @layer utilities {

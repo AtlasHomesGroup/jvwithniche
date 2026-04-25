@@ -18,7 +18,7 @@ const MAX_ROWS = 5000;
 /**
  * CSV export of the same submissions list the admin sees on /admin/submissions,
  * honouring the same filters via query params. Capped at 5k rows per
- * export — the portal is intake-only, we should never need more in one
+ * export - the portal is intake-only, we should never need more in one
  * shot, and larger exports belong in Salesforce anyway.
  */
 export async function GET(req: Request) {

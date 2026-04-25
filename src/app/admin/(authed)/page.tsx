@@ -30,7 +30,7 @@ export default async function AdminDashboardPage() {
         </h1>
         <p className="mt-1 text-sm text-brand-text-muted">
           Portal pipeline at a glance. Deal stages and rep assignments happen in
-          Salesforce — this view shows intake, signing, and sync health.
+          Salesforce - this view shows intake, signing, and sync health.
         </p>
       </header>
 
@@ -129,9 +129,9 @@ export default async function AdminDashboardPage() {
                   className="border-t border-brand-navy/5 hover:bg-brand-cream/30"
                 >
                   <Td>{formatDate(row.createdAt)}</Td>
-                  <Td>{row.submitterEmail ?? "—"}</Td>
+                  <Td>{row.submitterEmail ?? "-"}</Td>
                   <Td className="max-w-[260px] truncate">{propertyLine(row)}</Td>
-                  <Td>{row.dealType ?? "—"}</Td>
+                  <Td>{row.dealType ?? "-"}</Td>
                   <Td>
                     <StatusBadge status={row.status} />
                   </Td>

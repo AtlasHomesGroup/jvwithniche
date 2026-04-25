@@ -16,21 +16,21 @@ export function StepReview({
 
   const submitterName = [values.firstName, values.lastName]
     .filter(Boolean)
-    .join(" ") || "—";
+    .join(" ") || "-";
   const prospectName = [values.prospectFirstName, values.prospectLastName]
     .filter(Boolean)
-    .join(" ") || "—";
+    .join(" ") || "-";
   const propertyAddress =
     [values.propertyStreet, values.propertyCity, values.propertyState, values.propertyZip]
       .filter(Boolean)
-      .join(", ") || "—";
+      .join(", ") || "-";
 
   return (
     <div className="space-y-6">
       <StepHeading
-        eyebrow="Step 6 · Review & sign"
-        title="Look it over, then sign the JV agreement."
-        description="Everything you've entered is below. Click Edit to jump back to a section, or Submit & Sign to continue."
+        eyebrow="Step 6 · Review"
+        title="Look it over, then we'll generate your JV agreement."
+        description="Everything you've entered is below. Click Edit to jump back to a section, or Generate my JV agreement to continue."
       />
 
       <div className="space-y-4">
@@ -43,7 +43,7 @@ export function StepReview({
             value={
               [values.address, values.city, values.state, values.zip]
                 .filter(Boolean)
-                .join(", ") || "—"
+                .join(", ") || "-"
             }
           />
           <Row
@@ -63,43 +63,43 @@ export function StepReview({
         <ReviewSection title="Prospect & property" onEdit={() => onEditStep("prospect")}>
           <Row label="Prospect" value={prospectName} />
           <Row label="Property" value={propertyAddress} />
-          <Row label="Occupancy" value={values.occupancy ?? "—"} />
+          <Row label="Occupancy" value={values.occupancy ?? "-"} />
           {values.dealType === "Foreclosure" && (
             <>
-              <Row label="Lender" value={values.lender || "—"} />
+              <Row label="Lender" value={values.lender || "-"} />
               <Row
                 label="Foreclosing trustee"
-                value={values.foreclosingTrustee || "—"}
+                value={values.foreclosingTrustee || "-"}
               />
             </>
           )}
         </ReviewSection>
 
         <ReviewSection title="Deal type" onEdit={() => onEditStep("dealType")}>
-          <Row label="Selected" value={values.dealType ?? "—"} />
+          <Row label="Selected" value={values.dealType ?? "-"} />
         </ReviewSection>
 
         <ReviewSection title="Narrative" onEdit={() => onEditStep("narrative")}>
-          <Row label="Challenge" value={values.challenge || "—"} multiline />
+          <Row label="Challenge" value={values.challenge || "-"} multiline />
           <Row
             label="Situation"
-            value={values.situationSummary || "—"}
+            value={values.situationSummary || "-"}
             multiline
           />
           <Row
             label="Equity estimate"
-            value={values.equityEstimateReasoning || "—"}
+            value={values.equityEstimateReasoning || "-"}
             multiline
           />
           <Row
             label="Assistance requested"
             value={
-              (values.assistanceRequested ?? []).join(", ") || "—"
+              (values.assistanceRequested ?? []).join(", ") || "-"
             }
           />
           <Row
             label="Why it has potential"
-            value={values.potentialReasoning || "—"}
+            value={values.potentialReasoning || "-"}
             multiline
           />
           {values.additionalInfo && (
@@ -120,11 +120,14 @@ export function StepReview({
       </div>
 
       <div className="rounded-lg border border-brand-orange/30 bg-brand-orange-light/40 p-4 text-[13px] text-brand-navy">
-        <p className="font-medium">Next: sign the JV agreement.</p>
+        <p className="font-medium">
+          Next: we&apos;ll prepare your JV agreement.
+        </p>
         <p className="mt-1 text-brand-text-muted">
-          When you click <strong>Submit &amp; Sign</strong>, we&apos;ll open
-          the e-signature flow in the same session. Merging your info into
-          the agreement takes 2–3 clicks.
+          Click <strong>Generate my JV agreement</strong> and we&apos;ll merge
+          your info into the contract. This takes about 5-10 seconds. Stay
+          on this tab - the signing window will open right here as soon as
+          it&apos;s ready.
         </p>
       </div>
     </div>
@@ -164,7 +167,7 @@ function Row({
   value?: string;
   multiline?: boolean;
 }) {
-  const safe = value && value.trim().length > 0 ? value : "—";
+  const safe = value && value.trim().length > 0 ? value : "-";
   return (
     <div className="grid grid-cols-[140px_1fr] gap-3 text-[13px] sm:grid-cols-1 sm:gap-0.5">
       <dt className="font-medium text-brand-text-muted">{label}</dt>
@@ -187,7 +190,7 @@ function DiscoverySummary({ values }: { values: Partial<FullFormData> }) {
 
   const rows: Array<[string, string | number | undefined]> = [];
 
-  // Universal — every deal type has the urgency scale.
+  // Universal - every deal type has the urgency scale.
   rows.push(["Urgency 1-10", values.urgencyScale]);
 
   if (d === "Foreclosure") {
@@ -259,7 +262,7 @@ function DiscoverySummary({ values }: { values: Partial<FullFormData> }) {
           label={label}
           value={
             value === undefined || value === null || value === ""
-              ? "—"
+              ? "-"
               : String(value)
           }
           multiline={typeof value === "string" && value.length > 60}

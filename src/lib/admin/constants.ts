@@ -1,5 +1,5 @@
 // Edge- and client-safe constants. Must not import or reference anything
-// from node:crypto, node:fs, pg, or other Node-only modules — middleware
+// from node:crypto, node:fs, pg, or other Node-only modules - middleware
 // (Edge runtime) and client components both import from this file.
 
 export const SESSION_COOKIE_NAME = "niche_jv_admin_session";

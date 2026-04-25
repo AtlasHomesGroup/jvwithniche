@@ -39,7 +39,7 @@ export default async function AdminProfilePage() {
             value={
               user.lastLoginAt
                 ? new Date(user.lastLoginAt).toLocaleString()
-                : "—"
+                : "-"
             }
           />
           <Row
@@ -65,7 +65,7 @@ export default async function AdminProfilePage() {
           Sign out of every browser
         </h2>
         <p className="mb-3 text-[12px] text-brand-text-muted">
-          Invalidates every outstanding session for your account —
+          Invalidates every outstanding session for your account -
           including this one. Use this if you think your cookie may have
           leaked. You&apos;ll need to sign in again afterwards.
         </p>

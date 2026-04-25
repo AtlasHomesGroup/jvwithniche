@@ -20,11 +20,11 @@ async function main() {
     const res = await listTemplates();
     if (!res.results?.length) {
       console.log(
-        "✓ Authenticated — no templates in this workspace yet. Create one in PandaDoc, then re-run.",
+        "✓ Authenticated - no templates in this workspace yet. Create one in PandaDoc, then re-run.",
       );
       return;
     }
-    console.log(`✓ Authenticated — ${res.results.length} template(s):\n`);
+    console.log(`✓ Authenticated - ${res.results.length} template(s):\n`);
     for (const tpl of res.results) {
       console.log(`  ${tpl.id}`);
       console.log(`    ${tpl.name}  ·  modified ${tpl.date_modified}\n`);

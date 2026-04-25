@@ -61,7 +61,7 @@ function sample(): FullFormData {
     equityEstimateReasoning: "Balance ~$180K, Zillow avg $320K, clean title. Est ~$140K equity.",
     assistanceRequested: ["Bring financing", "Close the deal"],
     assistanceOther: "",
-    potentialReasoning: "Strong equity, motivated seller, auction forcing action — fast close likely.",
+    potentialReasoning: "Strong equity, motivated seller, auction forcing action - fast close likely.",
     additionalInfo: "",
     foreclosure_auctionDate: "2026-05-14",
     foreclosure_auctionTime: "10:00",
@@ -194,7 +194,7 @@ async function main() {
   // is what happens on a real user submission and exercises the paid-tier
   // external-email restriction on production keys.
   if (process.env.RUN_SEND === "1") {
-    console.log("\n▶ Sending (silent=false) — emails Signer 1 by signing_order");
+    console.log("\n▶ Sending (silent=false) - emails Signer 1 by signing_order");
     try {
       const sent = await sendDocument(doc.id, { silent: false });
       console.log(`  Sent. Status: ${sent.status}`);

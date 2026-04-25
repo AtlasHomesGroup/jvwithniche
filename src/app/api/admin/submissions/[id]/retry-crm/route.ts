@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 
 /**
  * Admin-triggered manual CRM push. Runs through the same orchestrator as
- * the automatic webhook path — idempotency guard + retry-queue bookkeeping
+ * the automatic webhook path - idempotency guard + retry-queue bookkeeping
  * is already built in, so calling this on a synced submission is a no-op.
  */
 export async function POST(

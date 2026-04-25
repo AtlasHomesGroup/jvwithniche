@@ -122,7 +122,7 @@ const optionalE164Phone = z
   .transform((v) => v ?? "");
 
 /* ─────────────────────────────────────────────────────────────
-   Step 1 — Setter (strict, all required)
+   Step 1 - Setter (strict, all required)
    ───────────────────────────────────────────────────────────── */
 
 export const setterSchema = z
@@ -157,7 +157,7 @@ export const setterSchema = z
 export type SetterData = z.infer<typeof setterSchema>;
 
 /* ─────────────────────────────────────────────────────────────
-   Step 2 — Prospect
+   Step 2 - Prospect
    Required: names + property address block.
    Optional: prospect contact, occupancy, lender/trustee.
    ───────────────────────────────────────────────────────────── */
@@ -179,7 +179,7 @@ export const prospectSchema = z.object({
 export type ProspectData = z.infer<typeof prospectSchema>;
 
 /* ─────────────────────────────────────────────────────────────
-   Step 3 — Deal Type
+   Step 3 - Deal Type
    ───────────────────────────────────────────────────────────── */
 
 export const dealTypeSchema = z.object({
@@ -189,7 +189,7 @@ export const dealTypeSchema = z.object({
 export type DealTypeData = z.infer<typeof dealTypeSchema>;
 
 /* ─────────────────────────────────────────────────────────────
-   Step 4 — Narrative
+   Step 4 - Narrative
    Required: assistanceRequested (at least one option).
    Everything else is optional free text.
    ───────────────────────────────────────────────────────────── */
@@ -222,7 +222,7 @@ export const narrativeSchema = z
 export type NarrativeData = z.infer<typeof narrativeSchema>;
 
 /* ─────────────────────────────────────────────────────────────
-   Step 5 — Discovery
+   Step 5 - Discovery
    Required across every deal type: urgencyScale (1-10).
    Variant-specific fields are all optional free-form info.
    ───────────────────────────────────────────────────────────── */
@@ -235,7 +235,7 @@ export const urgencySchema = z.object({
     .max(10, "Select 1 through 10"),
 });
 
-// Foreclosure — all fields optional except the universal urgency above.
+// Foreclosure - all fields optional except the universal urgency above.
 export const foreclosureSchema = z.object({
   foreclosure_auctionDate: z.string().trim().default(""),
   foreclosure_auctionTime: z.string().trim().default(""),
@@ -298,7 +298,7 @@ export const divorceSchema = z.object({
 export type DivorceData = z.infer<typeof divorceSchema>;
 
 /* ─────────────────────────────────────────────────────────────
-   Combined flat form schema — used for draft autosave and as
+   Combined flat form schema - used for draft autosave and as
    react-hook-form's Field type.
    ───────────────────────────────────────────────────────────── */
 
@@ -344,7 +344,7 @@ const narrativeBase = z.object({
   additionalInfo: z.string().default(""),
 });
 
-// Universal urgency — required across every discovery flow.
+// Universal urgency - required across every discovery flow.
 const urgencyBase = z.object({
   urgencyScale: z.number().int().min(1).max(10).optional(),
 });
@@ -416,7 +416,7 @@ export const fullFormSchema = setterBase
   .merge(surplusFundsBase)
   .merge(divorceBase);
 
-/** Input type — what the form holds BEFORE zod applies defaults. */
+/** Input type - what the form holds BEFORE zod applies defaults. */
 export type FullFormInput = z.input<typeof fullFormSchema>;
 export type FullFormOutput = z.output<typeof fullFormSchema>;
 export type FullFormData = FullFormInput;
@@ -437,7 +437,7 @@ export const variantSchemaByDealType: Partial<
 };
 
 /* ─────────────────────────────────────────────────────────────
-   Step metadata — drives the UI stepper + validation gates
+   Step metadata - drives the UI stepper + validation gates
    ───────────────────────────────────────────────────────────── */
 
 export const FORM_STEPS = [
@@ -451,7 +451,7 @@ export const FORM_STEPS = [
 
 export type FormStepId = (typeof FORM_STEPS)[number]["id"];
 
-/** Per-step lists of field names — used by react-hook-form's trigger() to
+/** Per-step lists of field names - used by react-hook-form's trigger() to
  *  validate only the current step before advancing. */
 export const STEP_FIELDS: Record<FormStepId, ReadonlyArray<keyof FullFormData>> = {
   setter: [
@@ -494,7 +494,7 @@ export const STEP_FIELDS: Record<FormStepId, ReadonlyArray<keyof FullFormData>> 
   review: [],
 };
 
-/** Per-step required field names — what the required-markers UI and the
+/** Per-step required field names - what the required-markers UI and the
  *  step validation reference to decide "is this step complete?". */
 export const REQUIRED_FIELDS: Partial<Record<FormStepId, ReadonlySet<keyof FullFormData>>> = {
   setter: new Set([

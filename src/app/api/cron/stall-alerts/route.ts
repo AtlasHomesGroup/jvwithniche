@@ -15,10 +15,10 @@ export const dynamic = "force-dynamic";
 
 /**
  * Stalled-alert threshold. Tunable via STALLED_ALERT_THRESHOLD_MINUTES env
- * var — e.g. 30 for 30 min, 1440 for 24h. Defaults to 120 (2h).
+ * var - e.g. 30 for 30 min, 1440 for 24h. Defaults to 120 (2h).
  *
  * Auto-delete runs at a fixed 7-day-idle threshold (retention policy is
- * more sensitive than alert timing — changing it needs a code review).
+ * more sensitive than alert timing - changing it needs a code review).
  */
 function stalledThresholdMs(): number {
   const raw = process.env.STALLED_ALERT_THRESHOLD_MINUTES;

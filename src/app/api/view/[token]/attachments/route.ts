@@ -11,7 +11,7 @@ import { pushFollowUpToCrm } from "@/lib/crm/push";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const MAX_BYTES = 8 * 1024 * 1024; // 8 MB — base64-encoded this lands at ~10.7 MB, under Salesforce's 12 MB REST limit.
+const MAX_BYTES = 8 * 1024 * 1024; // 8 MB - base64-encoded this lands at ~10.7 MB, under Salesforce's 12 MB REST limit.
 const ALLOWED_MIME = new Set([
   "application/pdf",
   "image/jpeg",
@@ -29,7 +29,7 @@ const ALLOWED_MIME = new Set([
 ]);
 
 /**
- * Attachment upload — JV partner-facing. Accepts multipart/form-data with
+ * Attachment upload - JV partner-facing. Accepts multipart/form-data with
  * a single `file` field (+ optional `caption`). Stores the file in the
  * private Vercel Blob, persists a `submission_updates` row, and pushes
  * the file to the CRM as an attachment on the existing Lead.
@@ -55,7 +55,7 @@ export async function POST(
   if (!(file instanceof Blob)) return badRequest("missing file");
   if (file.size === 0) return badRequest("empty file");
   if (file.size > MAX_BYTES) {
-    return badRequest(`file too large — max ${MAX_BYTES / 1024 / 1024} MB`);
+    return badRequest(`file too large - max ${MAX_BYTES / 1024 / 1024} MB`);
   }
   const rawName =
     "name" in file && typeof (file as File).name === "string"

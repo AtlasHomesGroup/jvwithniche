@@ -9,13 +9,13 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        // Niche navy — primary form actions, "Get Started"-style CTAs
+        // Niche navy - primary form actions, "Get Started"-style CTAs
         default:
           "bg-brand-navy text-white shadow-sm hover:bg-brand-navy-hover",
-        // Niche orange — accent / hero CTAs, "Start JV submission"
+        // Niche orange - accent / hero CTAs, "Start JV submission"
         accent:
           "bg-brand-orange text-white shadow-sm hover:bg-brand-orange-hover",
-        // Outlined navy ghost — "Join the Community"-style secondary actions
+        // Outlined navy ghost - "Join the Community"-style secondary actions
         outline:
           "border border-brand-navy/20 bg-transparent text-brand-navy hover:border-brand-navy hover:bg-brand-navy/5",
         secondary:

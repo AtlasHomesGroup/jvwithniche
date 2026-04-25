@@ -19,7 +19,7 @@ const bodySchema = z.object({
 });
 
 /**
- * Append-only note composer — JV partner-facing. Persists the note in
+ * Append-only note composer - JV partner-facing. Persists the note in
  * `submission_updates`, then pushes it to the CRM as a new note on the
  * existing Lead if CRM sync has already completed for this submission.
  */
@@ -59,7 +59,7 @@ export async function POST(
       })
       .returning();
 
-    // Non-blocking CRM push — we respond with ok immediately and fire the
+    // Non-blocking CRM push - we respond with ok immediately and fire the
     // push in the background. If CRM isn't synced yet or the push fails,
     // the admin view can show "not yet synced" and the retry cron can
     // pick it up later.

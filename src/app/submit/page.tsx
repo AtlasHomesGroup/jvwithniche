@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 
 export default async function SubmitPage() {
   // Try to hydrate an existing draft from the cookie. If the cookie points
-  // at a missing or already-submitted row, we start from scratch — the first
+  // at a missing or already-submitted row, we start from scratch - the first
   // client-side autosave will create a new row and set a fresh cookie.
   const token = await readDraftCookie();
   let initialData: Partial<FullFormData> = {};

@@ -67,7 +67,7 @@ export function SavedFilters({
       </div>
       {items.length === 0 && (
         <span className="text-brand-text-muted">
-          None yet — apply some filters and hit &quot;Save current&quot;.
+          None yet - apply some filters and hit &quot;Save current&quot;.
         </span>
       )}
       {items.map((item) => (

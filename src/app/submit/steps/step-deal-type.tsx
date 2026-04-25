@@ -35,7 +35,7 @@ const DEAL_TYPE_DESCRIPTIONS: Record<DealType, string> = {
   "Code Violations":
     "Property has unresolved city code violations creating pressure to sell.",
   "Water Shutoff":
-    "Utilities (water) have been shut off at the property — a motivation signal.",
+    "Utilities (water) have been shut off at the property - a motivation signal.",
   "Pre-Probate":
     "Owner is deceased but probate has not yet been opened. Heirs weighing options.",
   Guardianship:
@@ -55,11 +55,11 @@ const DEAL_TYPE_DESCRIPTIONS: Record<DealType, string> = {
   "Eviction Filing":
     "Owner is in the middle of evicting a tenant and may want out of the property.",
   "Vacant Land":
-    "Unimproved land parcel — no structure to deal with.",
+    "Unimproved land parcel - no structure to deal with.",
   "Predictive Niche List":
     "Lead sourced from a Niche Data predictive list.",
   "Other Lead Type":
-    "Something else — use the narrative section to describe.",
+    "Something else - use the narrative section to describe.",
 };
 
 export function StepDealType() {

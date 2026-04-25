@@ -15,7 +15,7 @@ export function LogoutButton() {
     try {
       await fetch("/api/admin/logout", { method: "POST" });
     } catch {
-      // Still navigate away — cookie is cleared server-side even on a
+      // Still navigate away - cookie is cleared server-side even on a
       // transport hiccup since the cookie is read per-request.
     }
     router.push("/admin/login");

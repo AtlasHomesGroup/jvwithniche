@@ -1,11 +1,11 @@
 /**
  * Thin, typed wrapper around the PandaDoc public API.
- * Only the endpoints this project actually uses — creating a document from a
+ * Only the endpoints this project actually uses - creating a document from a
  * template, opening an embedded signing session, downloading the signed PDF,
  * and checking status.
  *
  * Auth: "API-Key {key}" header. Sandbox and production keys both use the
- * same base URL (https://api.pandadoc.com/public/v1) — different keys point
+ * same base URL (https://api.pandadoc.com/public/v1) - different keys point
  * at different workspaces.
  */
 
@@ -183,7 +183,7 @@ export function downloadSignedPdf(documentId: string): Promise<Blob> {
 }
 
 /**
- * Helper for local debugging — lists templates available to the API key so
+ * Helper for local debugging - lists templates available to the API key so
  * the user can find their template UUID without clicking through the UI.
  */
 export function listTemplates(): Promise<{

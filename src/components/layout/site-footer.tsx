@@ -30,7 +30,7 @@ export function SiteFooter() {
       <div className="relative mx-auto w-full max-w-[1200px] px-6 pt-16 pb-8 sm:px-4 sm:pt-12">
         {/* 3-column grid: brand/pitch · family links · contact */}
         <div className="grid grid-cols-1 gap-12 md:grid-cols-12 md:gap-8">
-          {/* Column 1 — logo + pitch */}
+          {/* Column 1 - logo + pitch */}
           <div className="md:col-span-5">
             <Link href="/" className="inline-block" aria-label="JV With Niche home">
               <Image
@@ -43,12 +43,12 @@ export function SiteFooter() {
             </Link>
             <p className="mt-6 max-w-md text-[14px] leading-relaxed text-white/70">
               Submit a distressed-property JV opportunity to the Niche
-              acquisitions team — we partner on capital, seller conversations,
+              acquisitions team - we partner on capital, seller conversations,
               paperwork, and closing.
             </p>
           </div>
 
-          {/* Column 2 — The Niche Family */}
+          {/* Column 2 - The Niche Family */}
           <div className="md:col-span-3">
             <h3 className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/40">
               The Niche Family
@@ -73,7 +73,7 @@ export function SiteFooter() {
             </ul>
           </div>
 
-          {/* Column 3 — Contact */}
+          {/* Column 3 - Contact */}
           <div className="md:col-span-4">
             <h3 className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/40">
               Contact
@@ -117,7 +117,7 @@ export function SiteFooter() {
           </div>
         </div>
 
-        {/* Bottom — hairline divider with centered orange mark + copyright */}
+        {/* Bottom - hairline divider with centered orange mark + copyright */}
         <div className="mt-14 flex items-center gap-4 sm:mt-10">
           <div className="h-px flex-1 bg-white/10" />
           <Image

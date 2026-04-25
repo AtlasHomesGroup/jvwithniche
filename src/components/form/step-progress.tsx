@@ -46,7 +46,7 @@ export function StepProgress({
           const isComplete = completedSteps.has(step.id) || i < currentIndex;
           const connectorComplete = i < currentIndex;
 
-          // Any step is clickable — the parent validates + gates forward
+          // Any step is clickable - the parent validates + gates forward
           // navigation. Going backward always works.
           const clickable = !isCurrent && !!onStepClick;
 

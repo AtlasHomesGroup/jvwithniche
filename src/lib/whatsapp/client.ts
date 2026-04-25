@@ -111,7 +111,7 @@ export interface SendDocumentInput {
   filename: string;
   /** Optional caption shown beneath the attachment. */
   caption?: string;
-  /** Mime type — defaults to application/pdf. */
+  /** Mime type - defaults to application/pdf. */
   mimeType?: string;
 }
 
@@ -172,7 +172,7 @@ export function sendTextMessage(
 
 /**
  * Posts a file attachment (PDF, image, etc.) to a chat via Whapi. The
- * `mediaUrl` must be a URL Whapi's servers can GET without auth — for our
+ * `mediaUrl` must be a URL Whapi's servers can GET without auth - for our
  * signed JV agreement that's `/api/pdf/[token]` which proxies the private
  * Vercel Blob.
  */

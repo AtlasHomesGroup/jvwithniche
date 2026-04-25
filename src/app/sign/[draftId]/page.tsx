@@ -54,7 +54,7 @@ export default async function SignPage({
     return (
       <SignLayout
         eyebrow="Signed"
-        title="You’re all set — we’ve got your signed agreement."
+        title="You’re all set - we’ve got your signed agreement."
       >
         <p className="text-sm text-brand-text-muted">
           Michael and the Niche acquisitions team have been notified.
@@ -77,7 +77,7 @@ export default async function SignPage({
     return (
       <SignLayout
         eyebrow="Submission received"
-        title="Thanks — we’ve saved your submission."
+        title="Thanks - we’ve saved your submission."
       >
         <p className="text-sm text-brand-text-muted">
           We&apos;re still finishing the signing flow setup. Your submission is
@@ -99,7 +99,7 @@ export default async function SignPage({
     );
   }
 
-  /* ───── Awaiting signature — open an embed session ───── */
+  /* ───── Awaiting signature - open an embed session ───── */
   let sessionUrl: string | null = null;
   let sessionError: string | null = null;
   try {
@@ -118,7 +118,7 @@ export default async function SignPage({
     <SignLayout
       eyebrow="Almost done"
       title="Review and sign the JV agreement."
-      description="Your info has been merged into the agreement. Signing takes 2–3 clicks — you stay on this page the whole time."
+      description="Your info has been merged into the agreement. Signing takes 2-3 clicks - you stay on this page the whole time."
     >
       {sessionUrl ? (
         <SigningFrame

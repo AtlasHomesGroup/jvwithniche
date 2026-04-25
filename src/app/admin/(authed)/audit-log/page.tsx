@@ -83,7 +83,7 @@ export default async function AuditLogPage({
                       <span className="font-mono text-[12px] text-brand-text-muted">
                         {typeof details.deletedSubmissionId === "string"
                           ? `${(details.deletedSubmissionId as string).slice(0, 8)}… (deleted)`
-                          : "—"}
+                          : "-"}
                       </span>
                     )}
                   </Td>

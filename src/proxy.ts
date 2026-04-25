@@ -3,9 +3,9 @@ import { NextResponse, type NextRequest } from "next/server";
 import { SESSION_COOKIE_NAME } from "@/lib/admin/constants";
 
 /**
- * Edge proxy — cheap presence-of-cookie gate for /admin/*.
+ * Edge proxy - cheap presence-of-cookie gate for /admin/*.
  *
- * We only check that a session cookie exists here, not that it's valid —
+ * We only check that a session cookie exists here, not that it's valid -
  * full HMAC verification happens in the admin layout which runs Node.js.
  * This proxy exists so unauthenticated requests redirect to /login before
  * any admin page renders, avoiding flashes of protected UI.
@@ -13,7 +13,7 @@ import { SESSION_COOKIE_NAME } from "@/lib/admin/constants";
 export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Public admin paths — let the login page render normally.
+  // Public admin paths - let the login page render normally.
   if (
     pathname === "/admin/login" ||
     pathname.startsWith("/api/admin/login") ||

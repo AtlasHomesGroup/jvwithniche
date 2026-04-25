@@ -66,7 +66,7 @@ export function buildMergeTokens(data: FullFormData): TokenValue[] {
     "Homeowner Last Name": prospectLast,
     "Deal Type": dealType,
     "Auction Date": auctionDate,
-    // Candidates for the effective-date variable at the top of page 1 —
+    // Candidates for the effective-date variable at the top of page 1 -
     // not sure which one is configured, so we send all three. Unmatched
     // ones are dropped by PandaDoc.
     "Effective Date": today,
@@ -112,7 +112,7 @@ export function buildRecipients(data: FullFormData): Recipient[] {
   // Signer 2 (Michael) automatically gets his email the moment the JV
   // Partner's signature lands. PandaDoc requires at least one delivery
   // method per recipient, so we can't suppress the JV Partner's email
-  // entirely — they'll just get a harmless extra email alongside the
+  // entirely - they'll just get a harmless extra email alongside the
   // iframe flow.
   return [
     {

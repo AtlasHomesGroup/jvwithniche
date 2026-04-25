@@ -5,11 +5,11 @@ import { createHmac, timingSafeEqual } from "crypto";
  *
  * PandaDoc signs webhooks by HMAC-SHA256 of the raw request body with the
  * shared key configured when the webhook was created. They deliver the hex
- * signature via the `signature` query param (most common) — some legacy
+ * signature via the `signature` query param (most common) - some legacy
  * configs use an `X-Signature-SHA256` header, so we check both.
  *
  * Returns true only when a signature was present and matches. If the shared
- * key isn't configured, verification is skipped (dev mode) — the webhook
+ * key isn't configured, verification is skipped (dev mode) - the webhook
  * route still logs the attempt.
  */
 export function verifyPandaDocSignature(

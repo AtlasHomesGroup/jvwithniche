@@ -270,7 +270,7 @@ export async function listAuditForSubmission(
     .orderBy(desc(adminActions.createdAt));
 }
 
-/** Submissions with outstanding CRM failures — for the dashboard alert rail. */
+/** Submissions with outstanding CRM failures - for the dashboard alert rail. */
 export async function getFlaggedSubmissions(
   limit = 10,
 ): Promise<Array<Submission & { queueAttempts: number; queueLastError: string | null }>> {

@@ -86,7 +86,7 @@ export function buildWelcomeMessage(submission: Submission): string {
   ].join("\n");
 }
 
-/** Standalone WhatsApp message containing just the view link — sent as
+/** Standalone WhatsApp message containing just the view link - sent as
  *  its own message so WhatsApp renders it as a clickable URL card. */
 export function buildViewLinkMessage(submission: Submission): string {
   const link = buildViewLink(submission);
@@ -94,13 +94,13 @@ export function buildViewLinkMessage(submission: Submission): string {
     `🔗 Your JV submission portal:`,
     link,
     "",
-    `Use this link to download the signed agreement, add notes, or upload supporting documents at any time. Bookmark it — it's private to you.`,
+    `Use this link to download the signed agreement, add notes, or upload supporting documents at any time. Bookmark it - it's private to you.`,
   ].join("\n");
 }
 
 /**
  * Orchestrate the WhatsApp group creation for one submission. Throws on
- * any failure — caller decides whether to swallow + alert (the webhook
+ * any failure - caller decides whether to swallow + alert (the webhook
  * handler does this) or surface to the user.
  */
 export async function createSubmissionGroup(
@@ -113,14 +113,14 @@ export async function createSubmissionGroup(
   const submitterPhone = submission.submitterPhoneE164;
   if (!submitterPhone) {
     throw new Error(
-      `Submission ${submission.id} has no submitter_phone_e164 — cannot create WhatsApp group`,
+      `Submission ${submission.id} has no submitter_phone_e164 - cannot create WhatsApp group`,
     );
   }
 
   const teamNumbers = nicheTeamNumbers();
   if (teamNumbers.length === 0) {
     throw new Error(
-      "No NICHE_WHATSAPP_TEAM_* env vars are set — cannot populate the group",
+      "No NICHE_WHATSAPP_TEAM_* env vars are set - cannot populate the group",
     );
   }
 
@@ -132,11 +132,11 @@ export async function createSubmissionGroup(
 
   const subject = buildGroupName(submission);
 
-  // Step 1 — create the group with all members
+  // Step 1 - create the group with all members
   const created = await createGroup({ subject, participants });
   const groupId = created.id;
 
-  // Step 2 — set the Niche logo as the group picture (best-effort).
+  // Step 2 - set the Niche logo as the group picture (best-effort).
   try {
     await setGroupIcon(groupId, groupIconUrl());
   } catch (err) {
@@ -149,7 +149,7 @@ export async function createSubmissionGroup(
     );
   }
 
-  // Step 3 — post the welcome message (full form summary, no URL).
+  // Step 3 - post the welcome message (full form summary, no URL).
   const welcome = buildWelcomeMessage(submission);
   try {
     await sendTextMessage({ to: groupId, body: welcome });
@@ -163,7 +163,7 @@ export async function createSubmissionGroup(
     );
   }
 
-  // Step 4 — send the view link as its own message so WhatsApp renders it
+  // Step 4 - send the view link as its own message so WhatsApp renders it
   // as a clickable URL card.
   try {
     await sendTextMessage({
@@ -180,7 +180,7 @@ export async function createSubmissionGroup(
     );
   }
 
-  // Step 5 — attach the signed JV agreement PDF (best-effort). The Whapi
+  // Step 5 - attach the signed JV agreement PDF (best-effort). The Whapi
   // server fetches the file from our /api/pdf/[token] proxy, which in turn
   // reads from the private Vercel Blob.
   if (submission.signedPdfUrl) {
@@ -205,7 +205,7 @@ export async function createSubmissionGroup(
     }
   }
 
-  // Step 6 — try to fetch the invite link (best-effort)
+  // Step 6 - try to fetch the invite link (best-effort)
   let inviteLink: string | null = null;
   try {
     const inv = await getGroupInviteLink(groupId);

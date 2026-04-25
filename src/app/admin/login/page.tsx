@@ -31,7 +31,7 @@ export default async function AdminLoginPage({
           Admin sign in
         </h1>
         <p className="mt-2 text-sm text-brand-text-muted">
-          Use your Niche operations email + password. Submissions data only —
+          Use your Niche operations email + password. Submissions data only -
           deal management happens in Salesforce.
         </p>
         <LoginForm next={next} />

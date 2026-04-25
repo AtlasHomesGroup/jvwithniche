@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 /**
  * Public-ish PDF proxy for the signed JV agreement. The blob store is
- * configured as private, so the raw blob URL isn't directly reachable —
+ * configured as private, so the raw blob URL isn't directly reachable -
  * this route authenticates via BLOB_READ_WRITE_TOKEN and streams the file
  * through.
  *

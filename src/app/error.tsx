@@ -26,7 +26,7 @@ export default function Error({
       </h1>
       <p className="mt-3 text-sm text-brand-text-muted">
         We hit an unexpected error. Try again, or head back to the landing
-        page — we&apos;ve logged the failure and our team will see it.
+        page - we&apos;ve logged the failure and our team will see it.
       </p>
       {error.digest && (
         <p className="mt-2 font-mono text-[11px] text-brand-text-muted">

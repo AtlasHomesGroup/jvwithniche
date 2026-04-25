@@ -32,6 +32,7 @@ import { StepDealType } from "./steps/step-deal-type";
 import { StepNarrative } from "./steps/step-narrative";
 import { StepDiscovery } from "./steps/step-discovery";
 import { StepReview } from "./steps/step-review";
+import { GeneratingOverlay } from "./_components/generating-overlay";
 
 export function SubmitForm({
   initialData,
@@ -65,7 +66,7 @@ export function SubmitForm({
     ReadonlyArray<keyof FullFormData>
   >(() => STEP_FIELDS[currentStep], [currentStep]);
 
-  /** Per-step STRICT schema that actually enforces required fields —
+  /** Per-step STRICT schema that actually enforces required fields -
    *  distinct from the permissive fullFormSchema used for draft autosave.
    *  Null = no strict validation on this step. */
   const stepStrictSchemas = useMemo<
@@ -144,7 +145,7 @@ export function SubmitForm({
         }
         if (body?.error === "captcha_failed") {
           setSubmitError(
-            "We couldn't verify you're human — please try again.",
+            "We couldn't verify you're human - please try again.",
           );
           return;
         }
@@ -174,7 +175,7 @@ export function SubmitForm({
           shouldFocus: true,
         });
     if (!triggeredOk) return;
-    // Strict per-step validation — catches missing required fields that
+    // Strict per-step validation - catches missing required fields that
     // the permissive fullFormSchema lets through.
     if (!validateStep(currentStep)) return;
 
@@ -213,13 +214,13 @@ export function SubmitForm({
       const targetIndex = FORM_STEPS.findIndex((s) => s.id === target);
       if (targetIndex === -1) return;
 
-      // Backward — unconditional.
+      // Backward - unconditional.
       if (targetIndex <= currentIndex) {
         goToStep(target);
         return;
       }
 
-      // Forward — run both the RHF trigger AND the strict schema on each
+      // Forward - run both the RHF trigger AND the strict schema on each
       // step between current (inclusive) and target (exclusive). Bail at
       // the first incomplete step so the user lands there to fix it.
       for (let i = currentIndex; i < targetIndex; i++) {
@@ -286,7 +287,7 @@ export function SubmitForm({
             onBack={onBack}
             onNext={() => void onNext()}
             isSubmitting={isSubmitting}
-            nextLabel={isLast ? "Submit & sign agreement" : undefined}
+            nextLabel={isLast ? "Generate my JV agreement" : undefined}
             autosaveStatus={autosaveStatus}
           />
 
@@ -313,6 +314,7 @@ export function SubmitForm({
           </p>
         </form>
       </Form>
+      {isSubmitting && isLast && <GeneratingOverlay />}
     </div>
   );
 }

@@ -6,7 +6,7 @@ export const DRAFT_COOKIE_NAME = "jvwn_draft";
 export const DRAFT_COOKIE_MAX_AGE_SECONDS = 7 * 24 * 60 * 60; // 7 days
 
 export function generateDraftToken(): string {
-  // 32-char URL-safe id — plenty of entropy for a non-guessable draft cookie.
+  // 32-char URL-safe id - plenty of entropy for a non-guessable draft cookie.
   return nanoid(32);
 }
 

@@ -164,7 +164,7 @@ export function ForeclosureDiscovery() {
         name="foreclosure_hardshipReason"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Hardship reason — what caused them to fall behind? <OptionalTag /></FormLabel>
+            <FormLabel>Hardship reason - what caused them to fall behind? <OptionalTag /></FormLabel>
             <FormControl>
               <Textarea rows={4} {...field} />
             </FormControl>
@@ -179,7 +179,7 @@ export function ForeclosureDiscovery() {
         render={({ field }) => (
           <FormItem>
             <FormLabel>
-              Magic wand — reasonable outcome from their perspective?{" "}
+              Magic wand - reasonable outcome from their perspective?{" "}
               <OptionalTag />
             </FormLabel>
             <FormControl>

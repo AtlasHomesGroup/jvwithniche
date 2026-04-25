@@ -29,7 +29,7 @@ function joinAddress(parts: Array<string | null | undefined>): string {
 /**
  * Map our submission fields to the CRM Lead__c sobject shape.
  *
- * Only the handful of fields the CRM team asked us to send — everything
+ * Only the handful of fields the CRM team asked us to send - everything
  * else (Google address validation, skiptrace, Zillow enrichment, property
  * details, ratings) is computed by pipelines inside Salesforce after the
  * record is created.
@@ -75,7 +75,7 @@ export function buildLeadFields(submission: Submission): CrmLeadFields {
 
 /**
  * Build the CRM-facing notes array. Prospect-side data is already on the
- * Lead, so we skip that section — only Setter, Deal, Narrative, Discovery.
+ * Lead, so we skip that section - only Setter, Deal, Narrative, Discovery.
  */
 export function buildNotes(submission: Submission): CrmNote[] {
   const sections = renderSubmissionSections(submission);
@@ -102,7 +102,7 @@ export function buildNotes(submission: Submission): CrmNote[] {
   });
 
   for (const section of sections) {
-    // Skip Prospect & property — its fields are already on the Lead.
+    // Skip Prospect & property - its fields are already on the Lead.
     if (section.title === "Prospect & property") continue;
     if (section.rows.length === 0) continue;
     const lines = section.rows.map(({ label, value }) => {
@@ -115,7 +115,7 @@ export function buildNotes(submission: Submission): CrmNote[] {
 }
 
 /**
- * Build a short top-level description — shown alongside the lead in views
+ * Build a short top-level description - shown alongside the lead in views
  * that don't expand notes. Keep it to one paragraph.
  */
 export function buildDescription(submission: Submission): string {

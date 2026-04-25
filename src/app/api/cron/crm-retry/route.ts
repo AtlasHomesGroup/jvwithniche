@@ -60,7 +60,7 @@ export async function GET(req: Request) {
         .where(eq(submissions.id, row.submissionId))
         .limit(1);
       if (!submission) {
-        // Submission was deleted — drop the orphan queue row.
+        // Submission was deleted - drop the orphan queue row.
         await db.delete(crmSyncQueue).where(eq(crmSyncQueue.id, row.queueId));
         results.push({
           queueId: row.queueId,

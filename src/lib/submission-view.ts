@@ -118,7 +118,7 @@ export function renderSubmissionSections(s: Submission): SummarySection[] {
   const deal: SummaryRow[] = [];
   pushIf(deal, "Deal type", str(fd, "dealType") || s.dealType || "");
   const urgency = str(fd, "urgencyScale");
-  if (urgency) pushIf(deal, "Urgency (1–10)", urgency);
+  if (urgency) pushIf(deal, "Urgency (1-10)", urgency);
   pushIf(deal, "Assistance requested", str(fd, "assistanceRequested"));
   pushIf(deal, "Assistance (other)", str(fd, "assistanceOther"));
   if (deal.length > 0) sections.push({ title: "Deal", rows: deal });
@@ -213,7 +213,7 @@ export function renderSubmissionSections(s: Submission): SummarySection[] {
 }
 
 /**
- * Format a submission as a plain-text summary — used for the WhatsApp
+ * Format a submission as a plain-text summary - used for the WhatsApp
  * welcome message. Empty fields are omitted.
  */
 export function formatSubmissionForWhatsapp(s: Submission): string {

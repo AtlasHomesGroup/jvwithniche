@@ -44,7 +44,7 @@ export async function pushSubmissionToCrm(
 ): Promise<PushOutcome> {
   if (!isConfigured()) {
     console.info(
-      "[crm] skipped — CRM_ENDPOINT_URL not set",
+      "[crm] skipped - CRM_ENDPOINT_URL not set",
       submission.id,
     );
     return { kind: "skipped", submissionId: submission.id };
@@ -58,7 +58,7 @@ export async function pushSubmissionToCrm(
     };
   }
   if (!submission.signedPdfUrl) {
-    const reason = "signed PDF not yet archived — cannot push to CRM";
+    const reason = "signed PDF not yet archived - cannot push to CRM";
     console.warn("[crm] push skipped", submission.id, reason);
     return { kind: "skipped", submissionId: submission.id, reason };
   }
@@ -154,7 +154,7 @@ async function handleFailure(
           400,
         );
 
-  // Decide whether to retry. We don't retry CrmConfigError — it's a setup
+  // Decide whether to retry. We don't retry CrmConfigError - it's a setup
   // issue that won't fix itself. Everything else is retryable.
   const retryable = !(err instanceof CrmConfigError);
 
@@ -231,8 +231,8 @@ async function enqueueRetry(input: {
     return;
   }
 
-  // First failure — check if a queue row already exists for this submission
-  // (defensive — we don't want two rows racing).
+  // First failure - check if a queue row already exists for this submission
+  // (defensive - we don't want two rows racing).
   const existing = await db
     .select({ id: crmSyncQueue.id })
     .from(crmSyncQueue)
@@ -293,7 +293,7 @@ export async function pushFollowUpToCrm(
   if (!submission.crmOpportunityId) {
     return {
       ok: false,
-      reason: "submission has no crmOpportunityId yet — skipping follow-up push",
+      reason: "submission has no crmOpportunityId yet - skipping follow-up push",
     };
   }
   if (!input.note && !input.file) {

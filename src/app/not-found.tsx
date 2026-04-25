@@ -18,7 +18,7 @@ export default function NotFound() {
       </h1>
       <p className="mt-3 text-sm text-brand-text-muted">
         The link may be broken, or the page may have moved. Head back to the
-        landing page — or start a new JV submission below.
+        landing page - or start a new JV submission below.
       </p>
       <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
         <Button asChild>

@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 /**
  * Invalidate every outstanding session for the current admin. Bumps the
  * `sessions_valid_from` column so the HMAC session verifier rejects any
- * token issued before now. Also clears the current browser cookie — the
+ * token issued before now. Also clears the current browser cookie - the
  * admin must sign in again.
  */
 export async function POST() {

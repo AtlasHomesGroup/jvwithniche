@@ -61,13 +61,13 @@ export async function POST(req: Request) {
 
     const { recaptchaToken, honeypot } = parsed.data;
 
-    // Honeypot — silently "succeed" if a bot filled the trap field.
+    // Honeypot - silently "succeed" if a bot filled the trap field.
     if (honeypot.trim().length > 0) {
       return NextResponse.json({ ok: true, next: null });
     }
 
     const token = await readDraftCookie();
-    if (!token) return badRequest("No draft session — start from step 1");
+    if (!token) return badRequest("No draft session - start from step 1");
 
     const draft = await findDraftByToken(token);
     if (!draft) return badRequest("Draft not found or already submitted");
@@ -111,7 +111,7 @@ export async function POST(req: Request) {
     // Attempt to create the PandaDoc document up front so the /sign page
     // can open an embed session immediately on load. If PandaDoc isn't
     // configured yet (no template ID), we still advance the submission to
-    // awaiting_signature — the sign page will show a friendly "waiting
+    // awaiting_signature - the sign page will show a friendly "waiting
     // for template setup" message.
     let esignDocumentId: string | null = null;
     let esignProvider: "pandadoc" | "jotform" | null = null;

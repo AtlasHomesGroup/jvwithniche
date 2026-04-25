@@ -11,7 +11,7 @@ const SALT_BYTES = 16;
 export { SESSION_COOKIE_NAME, SESSION_TTL_MS };
 
 /* ──────────────────────────────────────────────────────────────
-   Password hashing — scrypt (Node built-in)
+   Password hashing - scrypt (Node built-in)
    Stored form: `scrypt$<hex-salt>$<hex-hash>`
    ────────────────────────────────────────────────────────────── */
 
@@ -44,7 +44,7 @@ export async function verifyPassword(
 }
 
 /* ──────────────────────────────────────────────────────────────
-   Session tokens — `<userId>.<issuedAtMs>.<hmac>`
+   Session tokens - `<userId>.<issuedAtMs>.<hmac>`
    HMAC-SHA256 over `<userId>.<issuedAtMs>` using ADMIN_SESSION_SECRET.
    ────────────────────────────────────────────────────────────── */
 
@@ -52,7 +52,7 @@ function sessionSecret(): string {
   const s = process.env.ADMIN_SESSION_SECRET;
   if (!s || s.length < 16) {
     throw new Error(
-      "ADMIN_SESSION_SECRET is not set (or is too short) — set at least 32 random chars",
+      "ADMIN_SESSION_SECRET is not set (or is too short) - set at least 32 random chars",
     );
   }
   return s;

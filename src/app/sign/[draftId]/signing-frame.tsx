@@ -13,7 +13,7 @@ const PANDADOC_ORIGIN = "https://app.pandadoc.com";
  *
  * Watches for PandaDoc's postMessage events so we can replace the iframe
  * with a branded "thanks" view the moment the JV Partner finishes their
- * part — without waiting for Michael's counter-signature (which happens
+ * part - without waiting for Michael's counter-signature (which happens
  * asynchronously via email). The webhook is still the source of truth for
  * the DB state; this is the user-facing flow.
  */
@@ -90,7 +90,7 @@ function CompletedView({
       </h2>
       <p className="mt-3 max-w-xl text-sm text-brand-text-muted">
         Your signature is on file. Michael Franke at Niche Acquisitions will
-        counter-sign within 1–2 business days — you&apos;ll receive the fully
+        counter-sign within 1-2 business days - you&apos;ll receive the fully
         executed agreement via email the moment he does.
       </p>
 
@@ -131,7 +131,7 @@ function CompletedView({
           {submissionId}
         </code>
         <p className="mt-2 text-[11px] text-brand-text-muted">
-          Save this — quote it if you reach out to{" "}
+          Save this - quote it if you reach out to{" "}
           <a
             href="mailto:support@nichecrm.ai"
             className="underline hover:text-brand-orange"

@@ -40,7 +40,7 @@ export async function POST(req: Request) {
 
     // Uniform error messaging so the endpoint doesn't leak which half was
     // wrong. Also keep timing uniform by running verifyPassword even on
-    // missing-user — otherwise the timing diff is observable.
+    // missing-user - otherwise the timing diff is observable.
     const dummyHash =
       "scrypt$00000000000000000000000000000000$" +
       "0".repeat(128);

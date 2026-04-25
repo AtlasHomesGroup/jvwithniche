@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
  * `/documents/{id}/send` endpoint acts as a reminder trigger when the
  * document is already in the sent state, re-mailing every recipient.
  *
- * Only valid while the submission is awaiting signature — once signed, a
+ * Only valid while the submission is awaiting signature - once signed, a
  * fresh signing email doesn't make sense.
  */
 export async function POST(
@@ -41,7 +41,7 @@ export async function POST(
     }
     if (submission.status !== "awaiting_signature") {
       return badRequest(
-        `submission is ${submission.status} — resend only makes sense while awaiting_signature`,
+        `submission is ${submission.status} - resend only makes sense while awaiting_signature`,
       );
     }
 

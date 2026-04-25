@@ -43,7 +43,7 @@ export const submissions = pgTable(
 
     status: submissionStatusEnum("status").default("draft").notNull(),
 
-    // full form state — structured per form sections in the spec
+    // full form state - structured per form sections in the spec
     formData: jsonb("form_data").notNull().default(sql`'{}'::jsonb`),
 
     // denormalized for fast lookup + dev alerts
@@ -77,7 +77,7 @@ export const submissions = pgTable(
     // unique return link
     returnLinkToken: text("return_link_token").notNull(),
 
-    // draft session cookie link — only for resumable drafts, not the public return link
+    // draft session cookie link - only for resumable drafts, not the public return link
     draftSessionToken: text("draft_session_token"),
 
     // audit
@@ -104,7 +104,7 @@ export const submissionUpdates = pgTable(
       .defaultNow()
       .notNull(),
     updateType: updateTypeEnum("update_type").notNull(),
-    // payload — for attachment: { url, filename, caption, size, mimeType }; for note: { text }
+    // payload - for attachment: { url, filename, caption, size, mimeType }; for note: { text }
     payload: jsonb("payload").notNull(),
     crmSynced: boolean("crm_synced").default(false).notNull(),
     crmSyncAttempts: integer("crm_sync_attempts").default(0).notNull(),
@@ -153,7 +153,7 @@ export const adminUsers = pgTable(
       .notNull(),
     lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
     disabled: boolean("disabled").default(false).notNull(),
-    // Sessions with issuedAt < this are rejected at verify-time — lets us
+    // Sessions with issuedAt < this are rejected at verify-time - lets us
     // invalidate every outstanding session for a given admin ("sign me out
     // everywhere") without rotating the global session secret.
     sessionsValidFrom: timestamp("sessions_valid_from", { withTimezone: true })
@@ -188,7 +188,7 @@ export const adminActions = pgTable(
     adminUserId: uuid("admin_user_id").references(() => adminUsers.id, {
       onDelete: "set null",
     }),
-    // Denormalized email — survives admin-row deletion.
+    // Denormalized email - survives admin-row deletion.
     adminEmail: text("admin_email").notNull(),
     // Nullable so deleting a submission preserves the audit trail.
     submissionId: uuid("submission_id").references(() => submissions.id, {

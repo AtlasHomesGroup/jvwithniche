@@ -33,7 +33,7 @@ export function StepDiscovery() {
         title="How urgent is this for the prospect?"
         description={
           dealType
-            ? "Rate their urgency from 1 to 10. Below that, a handful of optional questions specific to this deal type — fill what you know, skip what you don't."
+            ? "Rate their urgency from 1 to 10. Below that, a handful of optional questions specific to this deal type - fill what you know, skip what you don't."
             : "Rate the prospect's urgency from 1 to 10. Back up to step 3 to pick a deal type if you want deal-specific questions too."
         }
       />
@@ -45,7 +45,7 @@ export function StepDiscovery() {
         render={({ field, fieldState }) => (
           <FormItem>
             <FormLabel required>
-              Prospect&apos;s urgency — 1 to 10
+              Prospect&apos;s urgency - 1 to 10
             </FormLabel>
             <FormControl>
               <ScaleField

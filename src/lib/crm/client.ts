@@ -1,7 +1,7 @@
 /**
  * HTTP wrapper around the Niche CRM (Salesforce) JV request endpoint.
  *
- * The endpoint is a public Apex REST method served from a Salesforce Site —
+ * The endpoint is a public Apex REST method served from a Salesforce Site -
  * no auth header, just JSON in + JSON out. When the integration isn't
  * enabled (CRM_ENDPOINT_URL not set) the push is skipped silently so local
  * dev and early-access deploys can still ship without hitting their CRM.
@@ -36,7 +36,7 @@ export function isConfigured(): boolean {
 
 export interface CrmLeadFields {
   attributes: { type: "Lead__c"; url?: string };
-  /** Present only on follow-up pushes — identifies the existing Lead. */
+  /** Present only on follow-up pushes - identifies the existing Lead. */
   Id?: string;
   First_Name__c?: string;
   Full_Name__c?: string;

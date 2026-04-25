@@ -13,7 +13,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "JV With Niche — Submit a Joint Venture Opportunity",
+  title: "JV With Niche - Submit a Joint Venture Opportunity",
   description:
     "Submit a distressed-property JV opportunity to the Niche acquisitions team. Fast, secure, signed in one session.",
   metadataBase: new URL(

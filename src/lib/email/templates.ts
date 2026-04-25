@@ -42,7 +42,7 @@ function shell(bodyHtml: string, preheader: string): string {
 }
 
 function row(label: string, value: string): string {
-  const safe = escapeHtml(value || "—");
+  const safe = escapeHtml(value || "-");
   return `<tr><td style="padding:6px 0;vertical-align:top;width:140px;color:${NICHE_MUTED};font-size:13px;">${escapeHtml(label)}</td>
 <td style="padding:6px 0;color:${NICHE_TEXT};font-size:13px;">${safe}</td></tr>`;
 }
@@ -76,17 +76,17 @@ ${row("Submission id", s.id)}
     Open in admin view
   </a>
 </div>`,
-    `Draft stalled: ${propertyLine(s)} — ${s.submitterEmail ?? "no email"}`,
+    `Draft stalled: ${propertyLine(s)} - ${s.submitterEmail ?? "no email"}`,
   );
 
   const text = [
     "Draft stalled at signature",
     "",
     `Submitted: ${new Date(s.createdAt).toISOString()}`,
-    `Setter email: ${s.submitterEmail ?? "—"}`,
-    `Setter phone: ${s.submitterPhoneE164 ?? "—"}`,
+    `Setter email: ${s.submitterEmail ?? "-"}`,
+    `Setter phone: ${s.submitterPhoneE164 ?? "-"}`,
     `Property: ${propertyLine(s)}`,
-    `Deal type: ${s.dealType ?? "—"}`,
+    `Deal type: ${s.dealType ?? "-"}`,
     `Submission id: ${s.id}`,
     "",
     `Admin: ${adminLink}`,
@@ -125,7 +125,7 @@ ${row("Error", errorLine)}
     Open in admin view
   </a>
 </div>`,
-    `WhatsApp group failed for ${propertyLine(s)} — please reach out manually.`,
+    `WhatsApp group failed for ${propertyLine(s)} - please reach out manually.`,
   );
 
   const text = [
@@ -135,10 +135,10 @@ ${row("Error", errorLine)}
     "Reach out via SMS, email, or phone instead.",
     "",
     `Setter name: ${extractFullName(s)}`,
-    `Setter email: ${s.submitterEmail ?? "—"}`,
-    `Setter phone: ${s.submitterPhoneE164 ?? "—"}`,
+    `Setter email: ${s.submitterEmail ?? "-"}`,
+    `Setter phone: ${s.submitterPhoneE164 ?? "-"}`,
     `Property: ${propertyLine(s)}`,
-    `Deal type: ${s.dealType ?? "—"}`,
+    `Deal type: ${s.dealType ?? "-"}`,
     `Submission id: ${s.id}`,
     `Error: ${errorLine}`,
     "",
@@ -152,7 +152,7 @@ function extractFullName(s: Submission): string {
   const fd = s.formData as { firstName?: unknown; lastName?: unknown } | null;
   const first = typeof fd?.firstName === "string" ? fd.firstName : "";
   const last = typeof fd?.lastName === "string" ? fd.lastName : "";
-  return [first, last].filter(Boolean).join(" ") || "—";
+  return [first, last].filter(Boolean).join(" ") || "-";
 }
 
 export function crmPushFailedEmail(
@@ -175,7 +175,7 @@ export function crmPushFailedEmail(
       ? `Salesforce ${err.status ?? "?"}: ${(err.body ?? "").slice(0, 280)}`
       : `${err.kind}${err.message ? `: ${err.message}` : ""}`;
   const retryLine = err.permanent
-    ? "Max retries reached — the submission is still at crm_sync_pending. Please push it manually from the admin view once the CRM issue is resolved."
+    ? "Max retries reached - the submission is still at crm_sync_pending. Please push it manually from the admin view once the CRM issue is resolved."
     : `Attempt ${err.attempt} failed; the retry cron (every 5 min) will try again.`;
 
   const html = shell(
@@ -197,7 +197,7 @@ ${row("Error", errorLine)}
 </div>`,
     err.permanent
       ? `CRM push permanently failed for ${propertyLine(s)} after ${err.attempt} attempts.`
-      : `CRM push failed for ${propertyLine(s)} — retrying automatically.`,
+      : `CRM push failed for ${propertyLine(s)} - retrying automatically.`,
   );
 
   const text = [
@@ -205,10 +205,10 @@ ${row("Error", errorLine)}
     "",
     retryLine,
     "",
-    `Setter email: ${s.submitterEmail ?? "—"}`,
-    `Setter phone: ${s.submitterPhoneE164 ?? "—"}`,
+    `Setter email: ${s.submitterEmail ?? "-"}`,
+    `Setter phone: ${s.submitterPhoneE164 ?? "-"}`,
     `Property: ${propertyLine(s)}`,
-    `Deal type: ${s.dealType ?? "—"}`,
+    `Deal type: ${s.dealType ?? "-"}`,
     `Submission id: ${s.id}`,
     `Attempt: ${err.attempt}`,
     `Error: ${errorLine}`,
@@ -229,7 +229,7 @@ export function autoDeletedDigestEmail(rows: Submission[]): {
   const tableRows = rows
     .map(
       (r) => `<tr>
-<td style="padding:8px 10px;border-top:1px solid rgba(27,58,92,0.08);font-size:12px;color:${NICHE_TEXT};">${escapeHtml(r.submitterEmail ?? "—")}</td>
+<td style="padding:8px 10px;border-top:1px solid rgba(27,58,92,0.08);font-size:12px;color:${NICHE_TEXT};">${escapeHtml(r.submitterEmail ?? "-")}</td>
 <td style="padding:8px 10px;border-top:1px solid rgba(27,58,92,0.08);font-size:12px;color:${NICHE_TEXT};">${escapeHtml(propertyLine(r))}</td>
 <td style="padding:8px 10px;border-top:1px solid rgba(27,58,92,0.08);font-size:12px;color:${NICHE_MUTED};">${escapeHtml(r.status)}</td>
 <td style="padding:8px 10px;border-top:1px solid rgba(27,58,92,0.08);font-size:12px;color:${NICHE_MUTED};">${escapeHtml(new Date(r.createdAt).toISOString().slice(0, 10))}</td>
@@ -261,7 +261,7 @@ These drafts were inactive for more than seven days and have been removed from t
     "",
     ...rows.map(
       (r) =>
-        `  ${r.submitterEmail ?? "—"} · ${propertyLine(r)} · ${r.status} · created ${new Date(r.createdAt).toISOString().slice(0, 10)}`,
+        `  ${r.submitterEmail ?? "-"} · ${propertyLine(r)} · ${r.status} · created ${new Date(r.createdAt).toISOString().slice(0, 10)}`,
     ),
   ].join("\n");
 

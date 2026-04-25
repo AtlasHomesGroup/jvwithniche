@@ -241,7 +241,7 @@ export function StepSetter() {
                 />
               </FormControl>
               <FormDescription>
-                The email you used to register for Niche Community — helps us
+                The email you used to register for Niche Community - helps us
                 match and prioritize your submission.
               </FormDescription>
               <FormMessage />

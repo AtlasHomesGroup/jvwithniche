@@ -24,14 +24,14 @@ function Hero() {
       <div className="pointer-events-none absolute left-1/2 top-[-10%] h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-brand-orange/10 blur-3xl" />
       <div className="relative mx-auto flex max-w-5xl flex-col items-center gap-6 px-6 py-20 text-center sm:px-4 sm:py-14">
         <span className="inline-flex items-center rounded-full border border-brand-navy/10 bg-white px-3 py-1 text-xs font-semibold tracking-wide text-brand-navy">
-          500+ closed deals · Michael Franke &amp; the Niche acquisitions team
+          1000+ closed deals · Michael Franke &amp; the Niche acquisitions team
         </span>
         <h1 className="max-w-3xl text-balance text-4xl font-semibold tracking-tight text-brand-navy sm:text-3xl md:text-5xl">
           Partner with Niche on your next distressed-property deal.
         </h1>
         <p className="max-w-2xl text-balance text-base text-brand-text-muted sm:text-[15px] md:text-lg">
           Submit the opportunity, sign the JV agreement, and get introduced to
-          our acquisitions team — all in one session. Capital, seller
+          our acquisitions team - all in one session. Capital, seller
           conversations, paperwork, and closing support available.
         </p>
         <div className="flex flex-col gap-3 sm:flex-row">
@@ -43,7 +43,7 @@ function Hero() {
           </Button>
         </div>
         <p className="text-xs text-brand-text-muted">
-          Nationwide · SFR, multi-family, commercial, land, sub-to — all welcome.
+          Nationwide · SFR, multi-family, commercial, land, sub-to - all welcome.
         </p>
       </div>
     </section>
@@ -55,12 +55,12 @@ function HowItWorks() {
     {
       icon: CheckCircle2,
       title: "Tell us about the deal",
-      body: "Smart intake form tailored to each deal type — pre-foreclosure, NOD, probate, pre-probate, surplus funds, or divorce.",
+      body: "Smart intake form tailored to each deal type - pre-foreclosure, NOD, probate, pre-probate, surplus funds, or divorce.",
     },
     {
       icon: FileSignature,
       title: "Sign the JV agreement",
-      body: "Your information is auto-merged into the agreement. Sign in 2–3 clicks — no redirect, no paperwork.",
+      body: "Your information is auto-merged into the agreement. Sign in 2-3 clicks - no redirect, no paperwork.",
     },
     {
       icon: MessageCircle,
@@ -114,7 +114,7 @@ function TrustStrip() {
         <div className="inline-flex items-center gap-2 text-sm text-brand-navy">
           <ShieldCheck className="h-4 w-4 text-brand-orange" />
           <span className="font-medium">
-            Your data flows directly into Niche CRM — encrypted in transit and at
+            Your data flows directly into Niche CRM - encrypted in transit and at
             rest.
           </span>
         </div>

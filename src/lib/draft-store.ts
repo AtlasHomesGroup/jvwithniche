@@ -29,7 +29,7 @@ function toDraftRecord(row: Submission): DraftRecord {
 /**
  * Look up an existing draft by its session token.
  * Returns null if no row matches OR the row has already advanced beyond draft
- * status (e.g., signed/synced) — in either case the caller should start fresh.
+ * status (e.g., signed/synced) - in either case the caller should start fresh.
  */
 export async function findDraftByToken(
   token: string,
@@ -117,7 +117,7 @@ export async function updateDraft(
 /**
  * Get or create a draft in a single call. Used by server components and the
  * GET draft endpoint to hydrate the form on page load.
- * Returns the record plus whether a new row was just created — callers need
+ * Returns the record plus whether a new row was just created - callers need
  * that to know when to write the cookie on the response.
  */
 export async function getOrCreateDraft(

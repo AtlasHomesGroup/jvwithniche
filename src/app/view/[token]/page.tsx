@@ -85,7 +85,7 @@ export default async function ViewSubmissionPage({
         {signedDate && (
           <p className="mt-2 text-sm text-brand-text-muted">
             JV agreement signed on {signedDate}. This page is your private
-            record — bookmark it to come back any time.
+            record - bookmark it to come back any time.
           </p>
         )}
       </header>
@@ -200,7 +200,7 @@ function SummaryRow({
             : "text-brand-text-dark"
         }
       >
-        {value || "—"}
+        {value || "-"}
       </dd>
     </div>
   );
