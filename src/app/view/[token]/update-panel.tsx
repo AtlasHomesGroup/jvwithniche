@@ -182,8 +182,7 @@ function AttachmentForm({ token, crmSynced }: PanelProps) {
         <input
           ref={inputRef}
           type="file"
-          className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-          style={{ position: "absolute" }}
+          className="hidden"
           accept="application/pdf,image/jpeg,image/png,image/heic,image/heif,image/webp,image/gif,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/plain,text/csv"
           onChange={(e) => setFile(e.target.files?.[0] ?? null)}
           disabled={status === "submitting"}
