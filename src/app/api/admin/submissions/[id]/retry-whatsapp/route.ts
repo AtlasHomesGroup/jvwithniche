@@ -7,10 +7,12 @@ import { submissions } from "@/db/schema";
 import { getAdminSession } from "@/lib/admin/session";
 import { logAdminAction } from "@/lib/admin/audit";
 import {
+  checkContacts,
   isConfigured as whatsappConfigured,
+  normalizePhone,
   WhapiApiError,
 } from "@/lib/whatsapp/client";
-import { createSubmissionGroup } from "@/lib/whatsapp/group";
+import { createSubmissionGroup, nicheTeamNumbers } from "@/lib/whatsapp/group";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -58,6 +60,59 @@ export async function POST(
   }
   if (!submission.submitterPhoneE164) {
     return badRequest("submission has no submitter phone");
+  }
+
+  // Pre-validate every number against /contacts so an unregistered phone
+  // produces a clear error instead of a generic Whapi 500 on /groups.
+  const team = nicheTeamNumbers();
+  const allRaw = [...team, submission.submitterPhoneE164];
+  const allNorm = allRaw.map(normalizePhone);
+
+  console.info(
+    "[admin/retry-whatsapp] preflight",
+    JSON.stringify({
+      submissionId: submission.id,
+      subject: `JV with NICHE: ${[
+        submission.propertyStreet,
+        submission.propertyCity,
+        submission.propertyState,
+      ]
+        .filter(Boolean)
+        .join(", ")}`,
+      teamCount: team.length,
+      participants: allNorm,
+    }),
+  );
+
+  try {
+    const check = await checkContacts(allNorm);
+    const invalid = check.contacts.filter((c) => c.status !== "valid");
+    if (invalid.length > 0) {
+      const summary = invalid
+        .map((c) => `${c.input} (${c.status})`)
+        .join(", ");
+      console.warn(
+        "[admin/retry-whatsapp] participant not on whatsapp",
+        JSON.stringify({ submissionId: submission.id, invalid }),
+      );
+      await logAdminAction({
+        admin,
+        actionType: "retry_whatsapp_group",
+        submissionId: submission.id,
+        details: { outcome: "invalid_participant", invalid },
+      }).catch(() => {});
+      return badRequest(
+        `whatsapp number(s) not registered: ${summary}`,
+      );
+    }
+  } catch (err) {
+    // Contacts check itself blew up - log and fall through to the
+    // create attempt; better to try the real call than block on a
+    // diagnostic failure.
+    console.warn(
+      "[admin/retry-whatsapp] contacts pre-check failed (continuing)",
+      err instanceof Error ? err.message : String(err),
+    );
   }
 
   try {

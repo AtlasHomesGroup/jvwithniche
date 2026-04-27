@@ -146,6 +146,27 @@ export function getHealth(): Promise<HealthResponse> {
   return request<HealthResponse>("/health");
 }
 
+export interface ContactCheckResponse {
+  contacts: Array<{
+    input: string;
+    status: "valid" | "invalid" | string;
+    wa_id?: string;
+  }>;
+}
+
+/** Verify which numbers are actually registered on WhatsApp. */
+export function checkContacts(
+  numbers: string[],
+): Promise<ContactCheckResponse> {
+  return request<ContactCheckResponse>("/contacts", {
+    method: "POST",
+    body: JSON.stringify({
+      contacts: numbers.map(normalizePhone),
+      blocking: "wait",
+    }),
+  });
+}
+
 export function createGroup(
   input: CreateGroupInput,
 ): Promise<CreatedGroup> {
