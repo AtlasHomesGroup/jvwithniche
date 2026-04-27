@@ -1,11 +1,13 @@
 const LABELS: Record<string, string> = {
   retry_crm: "Retry CRM",
+  retry_whatsapp_group: "Retry WhatsApp",
   resend_signing_email: "Resend signing",
   delete_submission: "Delete",
 };
 
 const COLORS: Record<string, string> = {
   retry_crm: "bg-blue-50 text-blue-800 border-blue-200",
+  retry_whatsapp_group: "bg-emerald-50 text-emerald-800 border-emerald-200",
   resend_signing_email: "bg-amber-50 text-amber-800 border-amber-200",
   delete_submission: "bg-rose-50 text-rose-800 border-rose-200",
 };

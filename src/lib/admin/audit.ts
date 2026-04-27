@@ -7,6 +7,7 @@ import {
 
 export type AdminActionType =
   | "retry_crm"
+  | "retry_whatsapp_group"
   | "resend_signing_email"
   | "delete_submission"
   | "login"

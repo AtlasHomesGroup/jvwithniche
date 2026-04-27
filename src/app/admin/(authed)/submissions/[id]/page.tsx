@@ -17,6 +17,7 @@ import { renderSubmissionSections } from "@/lib/submission-view";
 import { StatusBadge } from "../../_components/status-badge";
 import { ActionBadge } from "../../audit-log/_components/action-badge";
 import { RetryCrmButton } from "./_components/retry-crm-button";
+import { RetryWhatsappButton } from "./_components/retry-whatsapp-button";
 import { ResendSigningButton } from "./_components/resend-signing-button";
 import { DeleteButton } from "./_components/delete-button";
 
@@ -144,6 +145,20 @@ export default async function AdminSubmissionDetailPage({
             ) : (
               <span className="text-[12px] text-brand-text-muted">
                 Not created.
+              </span>
+            )
+          }
+          footer={
+            s.signedAt && s.submitterPhoneE164 ? (
+              <RetryWhatsappButton
+                submissionId={s.id}
+                alreadyCreated={Boolean(s.whatsappGroupId)}
+              />
+            ) : (
+              <span>
+                {!s.signedAt
+                  ? "Awaiting signature"
+                  : "No submitter phone on file"}
               </span>
             )
           }
