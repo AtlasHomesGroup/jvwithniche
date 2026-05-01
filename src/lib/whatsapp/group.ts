@@ -9,6 +9,7 @@ import {
 } from "./client";
 import type { Submission } from "@/db/schema";
 import { formatSubmissionForWhatsapp } from "@/lib/submission-view";
+import { buildCalendlyUrl } from "@/lib/calendly/url";
 
 /**
  * Resolve the WhatsApp number that ops-notification messages should land
@@ -111,6 +112,19 @@ export function buildViewLinkMessage(submission: Submission): string {
     link,
     "",
     `Use this link to download the signed agreement, add notes, or upload supporting documents at any time. Bookmark it - it's private to you.`,
+  ].join("\n");
+}
+
+/** Standalone "book your kickoff call" message with prefilled Calendly
+ *  link. Returns null when CALENDLY_BOOKING_URL isn't configured. */
+export function buildCalendlyMessage(submission: Submission): string | null {
+  const url = buildCalendlyUrl(submission);
+  if (!url) return null;
+  return [
+    `📅 *Book your kickoff call with our closer*`,
+    url,
+    "",
+    `30 minutes — your name, email, and property are pre-filled, just pick a time that works.`,
   ].join("\n");
 }
 
@@ -296,6 +310,11 @@ export async function notifyOperatorOfSignedSubmission(
   await sendTextMessage({ to, body: buildOperatorPreamble(s) });
   await sendTextMessage({ to, body: buildWelcomeMessage(s) });
   await sendTextMessage({ to, body: buildViewLinkMessage(s) });
+
+  const calendlyMsg = buildCalendlyMessage(s);
+  if (calendlyMsg) {
+    await sendTextMessage({ to, body: calendlyMsg });
+  }
 
   if (s.signedPdfUrl) {
     const pdfUrl = `${siteUrl().replace(/\/$/, "")}/api/pdf/${s.returnLinkToken}`;

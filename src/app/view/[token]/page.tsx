@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { desc, eq } from "drizzle-orm";
-import { CheckCircle2, Download, FileText } from "lucide-react";
+import { CalendarClock, CheckCircle2, Download, FileText } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { db } from "@/db/client";
 import { submissions, submissionUpdates } from "@/db/schema";
 import { renderSubmissionSections } from "@/lib/submission-view";
+import { buildCalendlyUrl } from "@/lib/calendly/url";
 import { UpdatePanel } from "./update-panel";
 import { UpdateHistory, type UpdateRow } from "./update-history";
 
@@ -35,6 +36,7 @@ export default async function ViewSubmissionPage({
   if (!submission) notFound();
 
   const pdfHref = submission.signedPdfUrl ? `/api/pdf/${token}` : null;
+  const calendlyUrl = submission.signedAt ? buildCalendlyUrl(submission) : null;
   const propertyLine = [
     submission.propertyStreet,
     submission.propertyCity,
@@ -91,26 +93,54 @@ export default async function ViewSubmissionPage({
       </header>
 
       {pdfHref ? (
-        <section className="mb-10 flex items-center justify-between gap-4 rounded-xl border border-brand-navy/10 bg-white p-5 shadow-[0_8px_30px_rgba(27,58,92,0.06)] sm:flex-col sm:items-start">
-          <div className="flex items-center gap-3">
-            <div className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-brand-orange-light text-brand-orange">
-              <FileText className="h-5 w-5" aria-hidden />
+        <>
+          <section className="mb-6 flex items-center justify-between gap-4 rounded-xl border border-brand-navy/10 bg-white p-5 shadow-[0_8px_30px_rgba(27,58,92,0.06)] sm:flex-col sm:items-start">
+            <div className="flex items-center gap-3">
+              <div className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-brand-orange-light text-brand-orange">
+                <FileText className="h-5 w-5" aria-hidden />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-brand-navy">
+                  Signed JV agreement
+                </p>
+                <p className="text-[12px] text-brand-text-muted">
+                  PDF · downloadable
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-semibold text-brand-navy">
-                Signed JV agreement
-              </p>
-              <p className="text-[12px] text-brand-text-muted">
-                PDF · downloadable
-              </p>
-            </div>
-          </div>
-          <Button asChild>
-            <a href={pdfHref} target="_blank" rel="noopener noreferrer">
-              <Download className="mr-2 h-4 w-4" aria-hidden /> Download PDF
-            </a>
-          </Button>
-        </section>
+            <Button asChild>
+              <a href={pdfHref} target="_blank" rel="noopener noreferrer">
+                <Download className="mr-2 h-4 w-4" aria-hidden /> Download PDF
+              </a>
+            </Button>
+          </section>
+          {calendlyUrl && (
+            <section className="mb-10 flex items-center justify-between gap-4 rounded-xl border border-brand-orange/30 bg-brand-orange-light/40 p-5 shadow-[0_8px_30px_rgba(27,58,92,0.06)] sm:flex-col sm:items-start">
+              <div className="flex items-center gap-3">
+                <div className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-white text-brand-orange">
+                  <CalendarClock className="h-5 w-5" aria-hidden />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-brand-navy">
+                    Book your kickoff call
+                  </p>
+                  <p className="text-[12px] text-brand-text-muted">
+                    30 minutes with our closer · prefilled with your details
+                  </p>
+                </div>
+              </div>
+              <Button asChild>
+                <a
+                  href={calendlyUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Book your call
+                </a>
+              </Button>
+            </section>
+          )}
+        </>
       ) : (
         <section className="mb-10 rounded-xl border border-dashed border-brand-navy/20 bg-brand-cream/60 p-6 text-sm text-brand-text-muted">
           The JV agreement hasn&apos;t been counter-signed yet. This page will

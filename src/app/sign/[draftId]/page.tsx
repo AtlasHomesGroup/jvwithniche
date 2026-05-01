@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { db } from "@/db/client";
 import { submissions } from "@/db/schema";
 import { createEmbedSession, hasTemplate } from "@/lib/pandadoc/client";
+import { buildCalendlyUrl } from "@/lib/calendly/url";
 import { SigningFrame } from "./signing-frame";
 
 export const metadata = {
@@ -27,22 +28,15 @@ export default async function SignPage({
   if (!/^[0-9a-fA-F-]{36}$/.test(draftId)) notFound();
 
   const rows = await db
-    .select({
-      id: submissions.id,
-      status: submissions.status,
-      createdAt: submissions.createdAt,
-      signedAt: submissions.signedAt,
-      esignProvider: submissions.esignProvider,
-      esignDocumentId: submissions.esignDocumentId,
-      submitterEmail: submissions.submitterEmail,
-      returnLinkToken: submissions.returnLinkToken,
-    })
+    .select()
     .from(submissions)
     .where(eq(submissions.id, draftId))
     .limit(1);
 
   const submission = rows[0];
   if (!submission) notFound();
+
+  const calendlyUrl = buildCalendlyUrl(submission);
 
   /* ───── Already signed ───── */
   if (
@@ -60,6 +54,21 @@ export default async function SignPage({
           Michael and the Niche acquisitions team have been notified.
           We&apos;ll reach out via WhatsApp shortly to discuss next steps.
         </p>
+        {calendlyUrl && (
+          <div className="mt-6 rounded-xl border border-brand-orange/30 bg-brand-orange-light/40 p-4">
+            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-brand-orange">
+              Next: book your kickoff call
+            </p>
+            <p className="mt-1 text-sm text-brand-text-dark">
+              Pick a 30-minute slot with our closer to walk through the deal.
+            </p>
+            <Button asChild className="mt-3">
+              <a href={calendlyUrl} target="_blank" rel="noopener noreferrer">
+                Book your call
+              </a>
+            </Button>
+          </div>
+        )}
         <div className="mt-6 flex flex-col gap-3 sm:flex-row">
           <Button asChild>
             <Link href={viewHref}>View your submission & agreement</Link>
@@ -125,6 +134,7 @@ export default async function SignPage({
           sessionUrl={sessionUrl}
           submissionId={submission.id}
           viewHref={`/view/${submission.returnLinkToken}`}
+          calendlyUrl={calendlyUrl}
         />
       ) : (
         <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-6 text-sm">

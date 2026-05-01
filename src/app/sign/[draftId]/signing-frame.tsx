@@ -21,10 +21,12 @@ export function SigningFrame({
   sessionUrl,
   submissionId,
   viewHref,
+  calendlyUrl,
 }: {
   sessionUrl: string;
   submissionId: string;
   viewHref: string;
+  calendlyUrl: string | null;
 }) {
   const [status, setStatus] = useState<"signing" | "completed" | "exception">(
     "signing",
@@ -48,7 +50,13 @@ export function SigningFrame({
   }, []);
 
   if (status === "completed") {
-    return <CompletedView submissionId={submissionId} viewHref={viewHref} />;
+    return (
+      <CompletedView
+        submissionId={submissionId}
+        viewHref={viewHref}
+        calendlyUrl={calendlyUrl}
+      />
+    );
   }
 
   return (
@@ -76,9 +84,11 @@ export function SigningFrame({
 function CompletedView({
   submissionId,
   viewHref,
+  calendlyUrl,
 }: {
   submissionId: string;
   viewHref: string;
+  calendlyUrl: string | null;
 }) {
   return (
     <div className="rounded-2xl border border-brand-navy/10 bg-white p-6 shadow-[0_8px_30px_rgba(27,58,92,0.06)] sm:p-5">
@@ -114,8 +124,25 @@ function CompletedView({
         </ol>
       </div>
 
+      {calendlyUrl && (
+        <div className="mt-6 rounded-xl border border-brand-orange/30 bg-brand-orange-light/40 p-4">
+          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-brand-orange">
+            Next: book your kickoff call
+          </p>
+          <p className="mt-1 text-sm text-brand-text-dark">
+            Pick a 30-minute slot with our closer to walk through the deal.
+            Your name, email, and property are pre-filled.
+          </p>
+          <Button asChild className="mt-3">
+            <a href={calendlyUrl} target="_blank" rel="noopener noreferrer">
+              Book your call
+            </a>
+          </Button>
+        </div>
+      )}
+
       <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-        <Button asChild>
+        <Button asChild variant={calendlyUrl ? "outline" : "default"}>
           <Link href={viewHref}>View your submission & agreement</Link>
         </Button>
         <Button asChild variant="outline">
