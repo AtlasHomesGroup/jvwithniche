@@ -57,6 +57,7 @@ export function buildLeadFields(submission: Submission): CrmLeadFields {
   const lead: CrmLeadFields = {
     attributes: { type: "Lead__c" },
     First_Name__c: firstName,
+    Last_Name__c: lastName,
     Full_Name__c: fullName || firstName || "(no name provided)",
     Address__c: address,
     Type__c: dealType,

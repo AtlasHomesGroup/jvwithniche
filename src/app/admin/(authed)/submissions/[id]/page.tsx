@@ -105,9 +105,15 @@ export default async function AdminSubmissionDetailPage({
             s.crmOpportunityId ? (
               <div className="text-[12px]">
                 <p className="text-brand-text-muted">Lead Id</p>
-                <code className="mt-0.5 block break-all font-mono text-brand-navy">
+                <a
+                  href={`${(process.env.CRM_RECORD_BASE_URL ?? "https://nichecrm.my.salesforce.com/").replace(/\/$/, "")}/${s.crmOpportunityId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-0.5 inline-flex items-center gap-1 break-all font-mono text-brand-navy underline hover:text-brand-orange"
+                >
                   {s.crmOpportunityId}
-                </code>
+                  <ExternalLink className="h-3 w-3" aria-hidden />
+                </a>
               </div>
             ) : (
               <span className="text-[12px] text-brand-text-muted">

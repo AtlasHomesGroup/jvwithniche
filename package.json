@@ -17,7 +17,8 @@
     "whapi:ping": "node --env-file=.env.local --import tsx scripts/whapi-ping.ts",
     "crm:test": "node --env-file=.env.local --import tsx scripts/crm-test.ts",
     "admin:create": "node --env-file=.env.local --import tsx scripts/admin-create.ts",
-    "notify:resend": "node --env-file=.env.local --import tsx scripts/resend-notify.ts"
+    "notify:resend": "node --env-file=.env.local --import tsx scripts/resend-notify.ts",
+    "crm:mark": "node --env-file=.env.local --import tsx scripts/mark-crm-synced.ts"
   },
   "dependencies": {
     "@googlemaps/js-api-loader": "^2.0.2",

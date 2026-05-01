@@ -39,6 +39,7 @@ export interface CrmLeadFields {
   /** Present only on follow-up pushes - identifies the existing Lead. */
   Id?: string;
   First_Name__c?: string;
+  Last_Name__c?: string;
   Full_Name__c?: string;
   Email__c?: string;
   Phone__c?: string;
