@@ -16,7 +16,8 @@
     "pandadoc:test": "node --env-file=.env.local --import tsx scripts/pandadoc-test.ts",
     "whapi:ping": "node --env-file=.env.local --import tsx scripts/whapi-ping.ts",
     "crm:test": "node --env-file=.env.local --import tsx scripts/crm-test.ts",
-    "admin:create": "node --env-file=.env.local --import tsx scripts/admin-create.ts"
+    "admin:create": "node --env-file=.env.local --import tsx scripts/admin-create.ts",
+    "notify:resend": "node --env-file=.env.local --import tsx scripts/resend-notify.ts"
   },
   "dependencies": {
     "@googlemaps/js-api-loader": "^2.0.2",
