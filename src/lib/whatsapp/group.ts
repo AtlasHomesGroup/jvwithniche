@@ -10,6 +10,22 @@ import {
 import type { Submission } from "@/db/schema";
 import { formatSubmissionForWhatsapp } from "@/lib/submission-view";
 
+/**
+ * Resolve the WhatsApp number that ops-notification messages should land
+ * on. Defaults to the bound channel number, so messages appear in the
+ * bot's own "Message yourself" chat on the paired device. Override with
+ * WHAPI_NOTIFY_PHONE_E164 to send to a different number.
+ */
+function notifyTargetPhone(): string {
+  const explicit = process.env.WHAPI_NOTIFY_PHONE_E164?.trim();
+  if (explicit) return explicit;
+  const bound = process.env.WHAPI_BOUND_PHONE_E164?.trim();
+  if (bound) return bound;
+  throw new Error(
+    "No notify target — set WHAPI_NOTIFY_PHONE_E164 or WHAPI_BOUND_PHONE_E164",
+  );
+}
+
 const DEFAULT_GROUP_ICON_URL =
   "https://ik.imagekit.io/ldqszfymv/Niche%20Mastermind/niche-icon.png";
 
@@ -224,6 +240,72 @@ export async function createSubmissionGroup(
   }
 
   return { groupId, inviteLink, participants };
+}
+
+function buildOperatorPreamble(s: Submission): string {
+  const team = nicheTeamNumbers();
+  const submitter = s.submitterPhoneE164;
+  const members = [...team, ...(submitter ? [submitter] : [])];
+
+  const fd =
+    (s.formData as { firstName?: unknown; lastName?: unknown } | null) ?? {};
+  const fn = typeof fd.firstName === "string" ? fd.firstName.trim() : "";
+  const ln = typeof fd.lastName === "string" ? fd.lastName.trim() : "";
+  const partner = [fn, ln].filter(Boolean).join(" ") || "JV partner";
+
+  const property =
+    [s.propertyStreet, s.propertyCity, s.propertyState]
+      .map((v) => v?.trim())
+      .filter(Boolean)
+      .join(", ") || "(unknown)";
+
+  return [
+    "🟢 *New JV signed — create the group manually on WhatsApp*",
+    "",
+    `*Property:* ${property}`,
+    `*Signed by:* ${partner}`,
+    "",
+    `*Group name (copy/paste):*`,
+    buildGroupName(s),
+    "",
+    "*Members to add:*",
+    ...members.map((n) => `• ${n}`),
+    "",
+    "_Once the group exists, forward the next two messages and the signed PDF below into it._",
+  ].join("\n");
+}
+
+/**
+ * Operator-notification flow used after a JV agreement is signed. Sends
+ * the same content the auto-group-create flow would have posted (welcome
+ * + view link + signed PDF) to a single WhatsApp chat, plus a preamble
+ * with the suggested group name and member list. The operator then
+ * creates the group manually on their phone and forwards the messages in.
+ *
+ * Throws on the first send failure - caller decides whether to swallow +
+ * dev-alert (the webhook handler does this).
+ */
+export async function notifyOperatorOfSignedSubmission(
+  s: Submission,
+): Promise<void> {
+  if (!isConfigured()) {
+    throw new Error("WHAPI_API_KEY is not configured");
+  }
+  const to = normalizePhone(notifyTargetPhone());
+
+  await sendTextMessage({ to, body: buildOperatorPreamble(s) });
+  await sendTextMessage({ to, body: buildWelcomeMessage(s) });
+  await sendTextMessage({ to, body: buildViewLinkMessage(s) });
+
+  if (s.signedPdfUrl) {
+    const pdfUrl = `${siteUrl().replace(/\/$/, "")}/api/pdf/${s.returnLinkToken}`;
+    await sendDocument({
+      to,
+      mediaUrl: pdfUrl,
+      filename: buildPdfFilename(s),
+      caption: "Signed JV agreement",
+    });
+  }
 }
 
 function buildPdfFilename(s: Submission): string {

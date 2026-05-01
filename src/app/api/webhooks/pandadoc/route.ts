@@ -10,10 +10,10 @@ import {
   isConfigured as whatsappConfigured,
   WhapiApiError,
 } from "@/lib/whatsapp/client";
-import { createSubmissionGroup } from "@/lib/whatsapp/group";
+import { notifyOperatorOfSignedSubmission } from "@/lib/whatsapp/group";
 import { pushSubmissionToCrm } from "@/lib/crm/push";
 import { sendDevAlert } from "@/lib/email/resend";
-import { whatsappGroupFailedEmail } from "@/lib/email/templates";
+import { whatsappNotifyFailedEmail } from "@/lib/email/templates";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -170,12 +170,12 @@ async function processEvent(event: PandaDocWebhookEvent): Promise<void> {
     stored.url,
   );
 
-  // Kick off WhatsApp group creation + CRM push in parallel so neither
+  // Kick off operator notification + CRM push in parallel so neither
   // blocks the other. Failures on either side are non-fatal - the
   // submission is already persisted; the team has the admin view + dev
   // alerts to recover manually, and the CRM push self-enqueues for retry.
   await Promise.allSettled([
-    createWhatsAppGroupForSubmission(updated),
+    notifyOperatorOfSignedWrapper(updated),
     pushSubmissionToCrm(updated).catch((err) => {
       // pushSubmissionToCrm catches its own errors, but we add a safety
       // net here so an unexpected throw can't abort other settled calls.
@@ -187,44 +187,21 @@ async function processEvent(event: PandaDocWebhookEvent): Promise<void> {
   ]);
 }
 
-async function createWhatsAppGroupForSubmission(
+async function notifyOperatorOfSignedWrapper(
   submission: Submission,
 ): Promise<void> {
   if (!whatsappConfigured()) {
     console.info(
-      "[pandadoc webhook] whatsapp skipped - WHAPI_API_KEY not set",
+      "[pandadoc webhook] whatsapp notify skipped - WHAPI_API_KEY not set",
       submission.id,
     );
     return;
   }
-  if (submission.whatsappGroupCreated && submission.whatsappGroupId) {
-    console.info(
-      "[pandadoc webhook] whatsapp group already exists",
-      JSON.stringify({
-        submissionId: submission.id,
-        groupId: submission.whatsappGroupId,
-      }),
-    );
-    return;
-  }
   try {
-    const result = await createSubmissionGroup(submission);
-    await db
-      .update(submissions)
-      .set({
-        whatsappGroupCreated: true,
-        whatsappGroupId: result.groupId,
-        whatsappGroupInviteLink: result.inviteLink,
-        updatedAt: new Date(),
-      })
-      .where(eq(submissions.id, submission.id));
+    await notifyOperatorOfSignedSubmission(submission);
     console.info(
-      "[pandadoc webhook] whatsapp group created",
-      JSON.stringify({
-        submissionId: submission.id,
-        groupId: result.groupId,
-        memberCount: result.participants.length,
-      }),
+      "[pandadoc webhook] operator notified of signing",
+      submission.id,
     );
   } catch (err) {
     const diag =
@@ -243,22 +220,11 @@ async function createWhatsAppGroupForSubmission(
             }
           : { kind: "unknown", message: String(err) };
     console.error(
-      "[pandadoc webhook] whatsapp group creation failed",
+      "[pandadoc webhook] operator notify failed",
       JSON.stringify({ submissionId: submission.id, ...diag }),
     );
-    // Mark explicitly as not-created so the admin view can surface it
-    // and the team can manually reach out via SMS / phone instead.
-    await db
-      .update(submissions)
-      .set({
-        whatsappGroupCreated: false,
-        updatedAt: new Date(),
-      })
-      .where(eq(submissions.id, submission.id))
-      .catch(() => {});
-    // Email Michael / ops so they can fall back to SMS / phone.
     try {
-      const { subject, html, text } = whatsappGroupFailedEmail(submission, {
+      const { subject, html, text } = whatsappNotifyFailedEmail(submission, {
         kind: diag.kind,
         message: "message" in diag ? diag.message : undefined,
         status: "status" in diag ? diag.status : undefined,
@@ -267,7 +233,7 @@ async function createWhatsAppGroupForSubmission(
       await sendDevAlert({ subject, html, text });
     } catch (alertErr) {
       console.warn(
-        "[pandadoc webhook] failed to send whatsapp-failure alert",
+        "[pandadoc webhook] failed to send notify-failure alert",
         alertErr,
       );
     }

@@ -148,6 +148,59 @@ ${row("Error", errorLine)}
   return { subject, html, text };
 }
 
+export function whatsappNotifyFailedEmail(
+  s: Submission,
+  err: { kind: string; message?: string; status?: number; body?: string },
+): { subject: string; html: string; text: string } {
+  const subject = `[JV] WhatsApp signing notification FAILED · ${propertyLine(s)}`;
+  const adminLink = `${siteUrl()}/admin/submissions/${s.id}`;
+  const errorLine =
+    err.kind === "WhapiApiError"
+      ? `Whapi ${err.status ?? "?"}: ${(err.body ?? "").slice(0, 240)}`
+      : `${err.kind}${err.message ? `: ${err.message}` : ""}`;
+
+  const html = shell(
+    `<h1 style="margin:0 0 8px;color:${NICHE_NAVY};font-size:20px;font-weight:600;">WhatsApp signing notification could not be sent</h1>
+<p style="margin:0 0 16px;color:${NICHE_MUTED};font-size:14px;line-height:1.5;">
+The submission below was signed and archived successfully, but the WhatsApp ops-notification message failed to send. Open the admin view to resend it manually, or fall back to SMS / phone outreach.
+</p>
+<table cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;">
+${row("Setter name", extractFullName(s))}
+${row("Setter email", s.submitterEmail ?? "")}
+${row("Setter phone", s.submitterPhoneE164 ?? "")}
+${row("Property", propertyLine(s))}
+${row("Deal type", s.dealType ?? "")}
+${row("Submission id", s.id)}
+${row("Error", errorLine)}
+</table>
+<div style="margin-top:20px;">
+  <a href="${escapeHtml(adminLink)}" style="display:inline-block;padding:10px 18px;background:${NICHE_NAVY};color:#ffffff;text-decoration:none;border-radius:999px;font-size:13px;font-weight:600;">
+    Open in admin view
+  </a>
+</div>`,
+    `WhatsApp notify failed for ${propertyLine(s)} - check admin view.`,
+  );
+
+  const text = [
+    "WhatsApp signing notification could not be sent",
+    "",
+    "The submission below was signed and archived, but the WhatsApp ops-notification failed.",
+    "Open the admin view to resend manually.",
+    "",
+    `Setter name: ${extractFullName(s)}`,
+    `Setter email: ${s.submitterEmail ?? "-"}`,
+    `Setter phone: ${s.submitterPhoneE164 ?? "-"}`,
+    `Property: ${propertyLine(s)}`,
+    `Deal type: ${s.dealType ?? "-"}`,
+    `Submission id: ${s.id}`,
+    `Error: ${errorLine}`,
+    "",
+    `Admin: ${adminLink}`,
+  ].join("\n");
+
+  return { subject, html, text };
+}
+
 function extractFullName(s: Submission): string {
   const fd = s.formData as { firstName?: unknown; lastName?: unknown } | null;
   const first = typeof fd?.firstName === "string" ? fd.firstName : "";
