@@ -12,8 +12,14 @@ import {
 } from "@/lib/whatsapp/client";
 import { notifyOperatorOfSignedSubmission } from "@/lib/whatsapp/group";
 import { pushSubmissionToCrm } from "@/lib/crm/push";
-import { sendDevAlert } from "@/lib/email/resend";
-import { whatsappNotifyFailedEmail } from "@/lib/email/templates";
+import {
+  sendCustomerEmail,
+  sendDevAlert,
+} from "@/lib/email/resend";
+import {
+  submitterSignedEmail,
+  whatsappNotifyFailedEmail,
+} from "@/lib/email/templates";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -170,12 +176,13 @@ async function processEvent(event: PandaDocWebhookEvent): Promise<void> {
     stored.url,
   );
 
-  // Kick off operator notification + CRM push in parallel so neither
-  // blocks the other. Failures on either side are non-fatal - the
-  // submission is already persisted; the team has the admin view + dev
-  // alerts to recover manually, and the CRM push self-enqueues for retry.
+  // Kick off operator notification + CRM push + customer thank-you in
+  // parallel so none blocks the others. Failures on any one are non-fatal
+  // - the submission is already persisted; the team has the admin view +
+  // dev alerts to recover manually, and the CRM push self-enqueues.
   await Promise.allSettled([
     notifyOperatorOfSignedWrapper(updated),
+    sendSubmitterSignedEmailWrapper(updated),
     pushSubmissionToCrm(updated).catch((err) => {
       // pushSubmissionToCrm catches its own errors, but we add a safety
       // net here so an unexpected throw can't abort other settled calls.
@@ -185,6 +192,38 @@ async function processEvent(event: PandaDocWebhookEvent): Promise<void> {
       );
     }),
   ]);
+}
+
+async function sendSubmitterSignedEmailWrapper(
+  submission: Submission,
+): Promise<void> {
+  const tpl = submitterSignedEmail(submission);
+  if (!tpl) {
+    console.info(
+      "[pandadoc webhook] submitter thank-you skipped - no email on file",
+      submission.id,
+    );
+    return;
+  }
+  if (!submission.submitterEmail) return;
+  const result = await sendCustomerEmail({
+    to: submission.submitterEmail,
+    subject: tpl.subject,
+    html: tpl.html,
+    text: tpl.text,
+  });
+  if (!result.sent) {
+    console.warn(
+      "[pandadoc webhook] submitter thank-you send failed",
+      submission.id,
+      result.reason,
+    );
+    return;
+  }
+  console.info(
+    "[pandadoc webhook] submitter thank-you sent",
+    JSON.stringify({ submissionId: submission.id, to: submission.submitterEmail }),
+  );
 }
 
 async function notifyOperatorOfSignedWrapper(

@@ -29,6 +29,8 @@ import {
   buildMergeTokens,
   buildRecipients,
 } from "@/lib/pandadoc/merge-fields";
+import { sendOpsAlert } from "@/lib/email/resend";
+import { opsContractReadyEmail } from "@/lib/email/templates";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -216,6 +218,24 @@ export async function POST(req: Request) {
       })
       .where(eq(submissions.id, draft.id))
       .returning();
+
+    // Notify ops (Michael) that a new submission is awaiting signature.
+    // Best-effort - don't block the user response if email delivery hiccups.
+    try {
+      const { subject, html, text } = opsContractReadyEmail(updated);
+      const result = await sendOpsAlert({ subject, html, text });
+      if (!result.sent) {
+        console.warn(
+          "[submit] ops contract-ready email skipped",
+          result.reason,
+        );
+      }
+    } catch (alertErr) {
+      console.warn(
+        "[submit] ops contract-ready email failed",
+        alertErr instanceof Error ? alertErr.message : String(alertErr),
+      );
+    }
 
     return NextResponse.json({
       ok: true,

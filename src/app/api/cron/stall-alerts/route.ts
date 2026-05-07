@@ -4,10 +4,15 @@ import { and, eq, inArray, isNull, lt, or } from "drizzle-orm";
 import { unauthorized, serverError } from "@/lib/api";
 import { db } from "@/db/client";
 import { submissions, type Submission } from "@/db/schema";
-import { sendDevAlert } from "@/lib/email/resend";
+import {
+  sendCustomerEmail,
+  sendDevAlert,
+  sendOpsAlert,
+} from "@/lib/email/resend";
 import {
   autoDeletedDigestEmail,
   stalledDraftEmail,
+  submitterPleaseSignEmail,
 } from "@/lib/email/templates";
 
 export const runtime = "nodejs";
@@ -82,16 +87,53 @@ async function runStalledAlerts(): Promise<Submission[]> {
     );
 
   for (const s of stalled) {
-    const { subject, html, text } = stalledDraftEmail(s);
-    const result = await sendDevAlert({ subject, html, text });
-    if (!result.sent) {
-      console.warn("[cron stall-alerts] send failed", s.id, result.reason);
-      continue;
+    // 1. Ops alert (Michael).
+    const ops = stalledDraftEmail(s);
+    const opsResult = await sendOpsAlert({
+      subject: ops.subject,
+      html: ops.html,
+      text: ops.text,
+    });
+    if (!opsResult.sent) {
+      console.warn(
+        "[cron stall-alerts] ops send failed",
+        s.id,
+        opsResult.reason,
+      );
+      // Don't continue - we still want to try the customer email.
     }
-    await db
-      .update(submissions)
-      .set({ stalledAlertSentAt: new Date() })
-      .where(eq(submissions.id, s.id));
+
+    // 2. Customer-facing nudge - skip if no email on file.
+    if (s.submitterEmail) {
+      const cust = submitterPleaseSignEmail(s);
+      const custResult = await sendCustomerEmail({
+        to: s.submitterEmail,
+        subject: cust.subject,
+        html: cust.html,
+        text: cust.text,
+      });
+      if (!custResult.sent) {
+        console.warn(
+          "[cron stall-alerts] customer send failed",
+          s.id,
+          custResult.reason,
+        );
+      }
+    } else {
+      console.info(
+        "[cron stall-alerts] no submitter email - customer nudge skipped",
+        s.id,
+      );
+    }
+
+    // Mark sent if either email succeeded; otherwise leave the flag null
+    // so the next cron run retries.
+    if (opsResult.sent || s.submitterEmail) {
+      await db
+        .update(submissions)
+        .set({ stalledAlertSentAt: new Date() })
+        .where(eq(submissions.id, s.id));
+    }
   }
 
   return stalled;

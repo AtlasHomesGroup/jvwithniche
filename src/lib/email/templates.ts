@@ -1,4 +1,5 @@
 import type { Submission } from "@/db/schema";
+import { buildCalendlyUrl } from "@/lib/calendly/url";
 
 const NICHE_NAVY = "#1b3a5c";
 const NICHE_ORANGE = "#e8640a";
@@ -328,4 +329,201 @@ function siteUrl(): string {
       ? `https://${process.env.VERCEL_URL}`
       : "https://jvwithniche.com")
   );
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Customer-facing emails (different shell - no "dev alert")
+   ───────────────────────────────────────────────────────────── */
+
+function customerShell(bodyHtml: string, preheader: string): string {
+  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>JV With Niche</title></head>
+<body style="margin:0;padding:0;background:#faf5f0;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Inter,sans-serif;color:${NICHE_TEXT};">
+<div style="display:none;max-height:0;overflow:hidden;">${escapeHtml(preheader)}</div>
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#faf5f0;padding:24px 0;">
+  <tr><td align="center">
+    <table width="560" cellpadding="0" cellspacing="0" border="0" style="background:#ffffff;border:1px solid rgba(27,58,92,0.08);border-radius:12px;overflow:hidden;">
+      <tr><td style="padding:20px 24px;border-bottom:1px solid rgba(27,58,92,0.08);">
+        <div style="font-size:11px;font-weight:700;letter-spacing:2px;color:${NICHE_ORANGE};text-transform:uppercase;">JV With Niche</div>
+      </td></tr>
+      <tr><td style="padding:24px;">${bodyHtml}</td></tr>
+      <tr><td style="padding:16px 24px;border-top:1px solid rgba(27,58,92,0.08);background:#faf5f0;font-size:11px;color:${NICHE_MUTED};">
+        Niche Acquisitions · Kansas City · jvwithniche.com
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body></html>`;
+}
+
+function ctaButton(href: string, label: string): string {
+  return `<a href="${escapeHtml(href)}" style="display:inline-block;padding:12px 22px;background:${NICHE_NAVY};color:#ffffff;text-decoration:none;border-radius:999px;font-size:14px;font-weight:600;">${escapeHtml(label)}</a>`;
+}
+
+function firstName(s: Submission): string {
+  const fd = s.formData as { firstName?: unknown } | null;
+  if (typeof fd?.firstName === "string" && fd.firstName.trim()) {
+    return fd.firstName.trim();
+  }
+  return "there";
+}
+
+/**
+ * Ops alert sent to OPS_NOTIFY_EMAIL the moment a submission flips to
+ * `awaiting_signature` - i.e. the form is in, the PandaDoc contract has
+ * been generated and emailed to the JV partner, and we're waiting on
+ * their signature.
+ */
+export function opsContractReadyEmail(s: Submission): {
+  subject: string;
+  html: string;
+  text: string;
+} {
+  const subject = `[JV] Contract sent for signature · ${propertyLine(s)}`;
+  const adminLink = `${siteUrl()}/admin/submissions/${s.id}`;
+
+  const html = shell(
+    `<h1 style="margin:0 0 8px;color:${NICHE_NAVY};font-size:20px;font-weight:600;">JV partner submitted — awaiting signature</h1>
+<p style="margin:0 0 16px;color:${NICHE_MUTED};font-size:14px;line-height:1.5;">
+A new JV submission landed and the contract has been generated and sent for signature.
+</p>
+<table cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;">
+${row("Setter", extractFullName(s))}
+${row("Setter email", s.submitterEmail ?? "")}
+${row("Setter phone", s.submitterPhoneE164 ?? "")}
+${row("Property", propertyLine(s))}
+${row("Deal type", s.dealType ?? "")}
+${row("Submission id", s.id)}
+</table>
+<div style="margin-top:20px;">
+  <a href="${escapeHtml(adminLink)}" style="display:inline-block;padding:10px 18px;background:${NICHE_NAVY};color:#ffffff;text-decoration:none;border-radius:999px;font-size:13px;font-weight:600;">
+    Open in admin view
+  </a>
+</div>`,
+    `${propertyLine(s)} - awaiting signature`,
+  );
+
+  const text = [
+    "JV partner submitted — awaiting signature",
+    "",
+    `Setter: ${extractFullName(s)}`,
+    `Setter email: ${s.submitterEmail ?? "-"}`,
+    `Setter phone: ${s.submitterPhoneE164 ?? "-"}`,
+    `Property: ${propertyLine(s)}`,
+    `Deal type: ${s.dealType ?? "-"}`,
+    `Submission id: ${s.id}`,
+    "",
+    `Admin: ${adminLink}`,
+  ].join("\n");
+
+  return { subject, html, text };
+}
+
+/**
+ * Customer-facing email sent to the submitter when their draft has been
+ * sitting in `awaiting_signature` for too long. Nudges them to finish
+ * signing the PandaDoc agreement, mentions Calendly comes after.
+ */
+export function submitterPleaseSignEmail(s: Submission): {
+  subject: string;
+  html: string;
+  text: string;
+} {
+  const fn = firstName(s);
+  const propertyLineText = propertyLine(s);
+  const signLink = `${siteUrl()}/sign/${s.id}`;
+  const subject = `Action needed: sign your JV agreement for ${propertyLineText}`;
+
+  const html = customerShell(
+    `<h1 style="margin:0 0 12px;color:${NICHE_NAVY};font-size:22px;font-weight:600;">Hi ${escapeHtml(fn)} — your JV agreement is waiting</h1>
+<p style="margin:0 0 14px;color:${NICHE_TEXT};font-size:15px;line-height:1.55;">
+We received your submission for <strong>${escapeHtml(propertyLineText)}</strong>. Thanks for sending it over!
+</p>
+<p style="margin:0 0 14px;color:${NICHE_TEXT};font-size:15px;line-height:1.55;">
+We can't start working with you until the JV agreement is signed. It's already in your inbox via PandaDoc — clicking the button below opens the same document on our portal so you can finish signing in 2-3 clicks.
+</p>
+<div style="margin:22px 0;">${ctaButton(signLink, "Sign the JV agreement")}</div>
+<p style="margin:0 0 14px;color:${NICHE_MUTED};font-size:14px;line-height:1.55;">
+Once you sign, you'll unlock a <strong>Calendly link to book a kickoff call</strong> with our closer — your name, email, and property are pre-filled so it's just a 30-second pick-a-time.
+</p>
+<p style="margin:18px 0 0;color:${NICHE_MUTED};font-size:13px;">
+If the button doesn't work, copy and paste this into your browser:<br/>
+<span style="color:${NICHE_NAVY};word-break:break-all;">${escapeHtml(signLink)}</span>
+</p>`,
+    `Sign your JV agreement for ${propertyLineText}`,
+  );
+
+  const text = [
+    `Hi ${fn} — your JV agreement is waiting`,
+    "",
+    `We received your submission for ${propertyLineText}.`,
+    "We can't start working with you until the JV agreement is signed.",
+    "Sign here:",
+    signLink,
+    "",
+    "Once you sign you'll unlock a Calendly link to book a kickoff call with our closer.",
+  ].join("\n");
+
+  return { subject, html, text };
+}
+
+/**
+ * Customer-facing thank-you email sent the moment the JV partner finishes
+ * signing. Surfaces their private portal link and the prefilled Calendly
+ * URL.
+ */
+export function submitterSignedEmail(s: Submission): {
+  subject: string;
+  html: string;
+  text: string;
+} | null {
+  if (!s.submitterEmail) return null;
+
+  const fn = firstName(s);
+  const propertyLineText = propertyLine(s);
+  const viewLink = `${siteUrl()}/view/${s.returnLinkToken}`;
+  const calendlyUrl = buildCalendlyUrl(s);
+  const subject = `Signed — your next step for ${propertyLineText}`;
+
+  const calendlyBlock = calendlyUrl
+    ? `<p style="margin:0 0 14px;color:${NICHE_TEXT};font-size:15px;line-height:1.55;">
+Pick a 30-minute slot with our closer to walk through the deal. Your name, email, and property are pre-filled — just choose a time that works.
+</p>
+<div style="margin:18px 0;">${ctaButton(calendlyUrl, "Book your kickoff call")}</div>`
+    : "";
+
+  const html = customerShell(
+    `<h1 style="margin:0 0 12px;color:${NICHE_NAVY};font-size:22px;font-weight:600;">Hi ${escapeHtml(fn)} — agreement signed ✓</h1>
+<p style="margin:0 0 14px;color:${NICHE_TEXT};font-size:15px;line-height:1.55;">
+Thanks for signing the JV agreement for <strong>${escapeHtml(propertyLineText)}</strong>. Michael Franke at Niche Acquisitions will counter-sign within 1-2 business days; you'll get the executed PDF by email the moment he does.
+</p>
+<h2 style="margin:22px 0 8px;color:${NICHE_NAVY};font-size:16px;font-weight:600;">Two things for you</h2>
+<p style="margin:0 0 6px;color:${NICHE_TEXT};font-size:15px;font-weight:600;">1. Book your kickoff call</p>
+${calendlyBlock || `<p style="margin:0 0 14px;color:${NICHE_MUTED};font-size:14px;line-height:1.55;">We'll follow up with a calendar link shortly.</p>`}
+<p style="margin:14px 0 6px;color:${NICHE_TEXT};font-size:15px;font-weight:600;">2. Your private JV portal</p>
+<p style="margin:0 0 14px;color:${NICHE_TEXT};font-size:15px;line-height:1.55;">
+Bookmark the link below — it's your dashboard for this deal. You can download the signed agreement, leave notes, or upload supporting documents at any time.
+</p>
+<div style="margin:18px 0;">${ctaButton(viewLink, "Open your JV portal")}</div>
+<p style="margin:18px 0 0;color:${NICHE_MUTED};font-size:13px;">
+Portal link if the button doesn't work:<br/>
+<span style="color:${NICHE_NAVY};word-break:break-all;">${escapeHtml(viewLink)}</span>
+</p>`,
+    `Signed - book your call and open your JV portal`,
+  );
+
+  const text = [
+    `Hi ${fn} — your JV agreement is signed.`,
+    "",
+    `Thanks for signing for ${propertyLineText}. Michael will counter-sign within 1-2 business days.`,
+    "",
+    "Two things for you:",
+    "",
+    "1. Book your kickoff call:",
+    calendlyUrl ?? "(calendar link coming shortly)",
+    "",
+    "2. Your private JV portal:",
+    viewLink,
+  ].join("\n");
+
+  return { subject, html, text };
 }

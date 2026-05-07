@@ -44,6 +44,7 @@ export interface CrmLeadFields {
   Email__c?: string;
   Phone__c?: string;
   Address__c?: string;
+  Google_Formatted_Address__c?: string;
   Type__c?: string;
   Entity_Type__c?: string;
   Source__c?: string;

@@ -60,6 +60,7 @@ export function buildLeadFields(submission: Submission): CrmLeadFields {
     Last_Name__c: lastName,
     Full_Name__c: fullName || firstName || "(no name provided)",
     Address__c: address,
+    Google_Formatted_Address__c: address,
     Type__c: dealType,
     Entity_Type__c: dealType,
     Source__c: "Referral",
