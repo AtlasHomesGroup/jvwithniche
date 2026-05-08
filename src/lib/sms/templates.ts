@@ -81,19 +81,19 @@ export function submitterPleaseSignSms(s: Submission): string {
 }
 
 /**
- * Acknowledgement SMS sent to the setter the moment they're identifiable
- * on the form (firstName + phone captured). Confirms we received the
- * start and points them back to finish + sign.
+ * Acknowledgement SMS sent to the setter the moment they progress past
+ * screen 1 of the form. They're still mid-flow at this point — no
+ * submission has been made and no contract exists yet — so the copy
+ * confirms we're tracking their progress and gives them a resume link
+ * in case they bail and come back later.
  */
 export function submitterFormStartedSms(s: Submission): string {
   const fn = firstName(s);
-  const property = shortProperty(s);
   return [
-    `Hi ${fn} — we received your JV submission for ${property}.`,
-    `Continue / sign the agreement at ${siteUrl()}/sign/${s.id}.`,
-    `Booking link unlocks after signing.`,
-    `Reply STOP to opt out.`,
-  ].join(" ");
+    `Hi ${fn} — thanks for starting your JV submission with Niche Acquisitions. We're saving your progress as you go.`,
+    ``,
+    `Pick up where you left off here: ${siteUrl()}/submit`,
+  ].join("\n");
 }
 
 /**
