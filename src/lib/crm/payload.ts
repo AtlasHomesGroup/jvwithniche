@@ -86,19 +86,17 @@ export function buildLeadFields(submission: Submission): CrmLeadFields {
 
 /**
  * Map our form's `occupancy` enum to the Salesforce Vacancy_Status__c
- * restricted picklist. Returns null when no safe mapping exists - in
- * that case we leave the field unset so the Lead insert succeeds.
- *
- * Update this table when the CRM team confirms the exact picklist
- * options. Only entries with a non-null mapping get sent.
+ * restricted picklist. The CRM picklist is a Yes/No question
+ * ("Is the property vacant?"), so descriptive form values collapse
+ * into Yes / No / omit.
  */
 function mapVacancyToPicklist(formValue: string): string | null {
   if (!formValue) return null;
   const map: Record<string, string | null> = {
-    "Owner-occupied": null,
-    "Tenant-occupied": null,
-    Vacant: null,
-    Unknown: null,
+    "Owner-occupied": "No",
+    "Tenant-occupied": "No",
+    Vacant: "Yes",
+    Unknown: null, // leave the field empty when the setter doesn't know
   };
   return map[formValue] ?? null;
 }
