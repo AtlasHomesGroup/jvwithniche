@@ -2,26 +2,11 @@ import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 
 import { db } from "@/db/client";
-import { submissions, type Submission } from "@/db/schema";
+import { submissions } from "@/db/schema";
 import { downloadSignedPdf } from "@/lib/pandadoc/client";
 import { verifyPandaDocSignature } from "@/lib/pandadoc/verify";
 import { uploadSignedPdf } from "@/lib/blob-storage";
-import {
-  isConfigured as whatsappConfigured,
-  WhapiApiError,
-} from "@/lib/whatsapp/client";
-import { notifyOperatorOfSignedSubmission } from "@/lib/whatsapp/group";
-import { pushSubmissionToCrm } from "@/lib/crm/push";
-import {
-  sendCustomerEmail,
-  sendDevAlert,
-} from "@/lib/email/resend";
-import {
-  submitterSignedEmail,
-  whatsappNotifyFailedEmail,
-} from "@/lib/email/templates";
-import { isConfigured as smsConfigured, sendOpsSms, sendSms } from "@/lib/sms/client";
-import { opsSignedSms, submitterSignedSms } from "@/lib/sms/templates";
+import { runPostSigningSideEffects } from "@/lib/post-sign/side-effects";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -178,171 +163,9 @@ async function processEvent(event: PandaDocWebhookEvent): Promise<void> {
     stored.url,
   );
 
-  // Kick off operator notification + CRM push + customer thank-you in
-  // parallel so none blocks the others. Failures on any one are non-fatal
-  // - the submission is already persisted; the team has the admin view +
-  // dev alerts to recover manually, and the CRM push self-enqueues.
-  await Promise.allSettled([
-    notifyOperatorOfSignedWrapper(updated),
-    sendSubmitterSignedEmailWrapper(updated),
-    sendSubmitterSignedSmsWrapper(updated),
-    sendOpsSignedSmsWrapper(updated),
-    pushSubmissionToCrm(updated).catch((err) => {
-      // pushSubmissionToCrm catches its own errors, but we add a safety
-      // net here so an unexpected throw can't abort other settled calls.
-      console.error(
-        "[pandadoc webhook] unexpected CRM push throw",
-        err instanceof Error ? err.message : String(err),
-      );
-    }),
-  ]);
+  // All post-signing side effects (operator notify, CRM push, customer
+  // thank-you email + SMS, ops SMS) live in a shared module so the
+  // returning-setter path in /api/submissions can reuse it.
+  await runPostSigningSideEffects(updated);
 }
 
-async function sendOpsSignedSmsWrapper(
-  submission: Submission,
-): Promise<void> {
-  if (!smsConfigured()) return;
-  const results = await sendOpsSms(opsSignedSms(submission));
-  for (const r of results) {
-    if (!r.sent) {
-      console.warn(
-        "[pandadoc webhook] ops signed sms failed",
-        JSON.stringify({ submissionId: submission.id, to: r.to, reason: r.reason }),
-      );
-    } else {
-      console.info(
-        "[pandadoc webhook] ops signed sms sent",
-        JSON.stringify({ submissionId: submission.id, to: r.to, sid: r.sid }),
-      );
-    }
-  }
-}
-
-async function sendSubmitterSignedSmsWrapper(
-  submission: Submission,
-): Promise<void> {
-  if (!smsConfigured()) {
-    console.info(
-      "[pandadoc webhook] sms skipped - twilio not configured",
-      submission.id,
-    );
-    return;
-  }
-  if (!submission.submitterPhoneE164) {
-    console.info(
-      "[pandadoc webhook] sms skipped - no phone",
-      submission.id,
-    );
-    return;
-  }
-  const fd =
-    (submission.formData as { whatsappConsent?: unknown } | null) ?? {};
-  if (fd.whatsappConsent !== true) {
-    console.info(
-      "[pandadoc webhook] sms skipped - no consent",
-      submission.id,
-    );
-    return;
-  }
-  const result = await sendSms({
-    to: submission.submitterPhoneE164,
-    body: submitterSignedSms(submission),
-  });
-  if (!result.sent) {
-    console.warn(
-      "[pandadoc webhook] sms send failed",
-      submission.id,
-      result.reason,
-    );
-    return;
-  }
-  console.info(
-    "[pandadoc webhook] submitter sms sent",
-    JSON.stringify({ submissionId: submission.id, sid: result.sid }),
-  );
-}
-
-async function sendSubmitterSignedEmailWrapper(
-  submission: Submission,
-): Promise<void> {
-  const tpl = submitterSignedEmail(submission);
-  if (!tpl) {
-    console.info(
-      "[pandadoc webhook] submitter thank-you skipped - no email on file",
-      submission.id,
-    );
-    return;
-  }
-  if (!submission.submitterEmail) return;
-  const result = await sendCustomerEmail({
-    to: submission.submitterEmail,
-    subject: tpl.subject,
-    html: tpl.html,
-    text: tpl.text,
-  });
-  if (!result.sent) {
-    console.warn(
-      "[pandadoc webhook] submitter thank-you send failed",
-      submission.id,
-      result.reason,
-    );
-    return;
-  }
-  console.info(
-    "[pandadoc webhook] submitter thank-you sent",
-    JSON.stringify({ submissionId: submission.id, to: submission.submitterEmail }),
-  );
-}
-
-async function notifyOperatorOfSignedWrapper(
-  submission: Submission,
-): Promise<void> {
-  if (!whatsappConfigured()) {
-    console.info(
-      "[pandadoc webhook] whatsapp notify skipped - WHAPI_API_KEY not set",
-      submission.id,
-    );
-    return;
-  }
-  try {
-    await notifyOperatorOfSignedSubmission(submission);
-    console.info(
-      "[pandadoc webhook] operator notified of signing",
-      submission.id,
-    );
-  } catch (err) {
-    const diag =
-      err instanceof WhapiApiError
-        ? {
-            kind: "WhapiApiError" as const,
-            status: err.status,
-            body: err.body.slice(0, 400),
-            message: err.message,
-          }
-        : err instanceof Error
-          ? {
-              kind: err.name,
-              message: err.message,
-              stack: err.stack?.slice(0, 500),
-            }
-          : { kind: "unknown", message: String(err) };
-    console.error(
-      "[pandadoc webhook] operator notify failed",
-      JSON.stringify({ submissionId: submission.id, ...diag }),
-    );
-    try {
-      const { subject, html, text } = whatsappNotifyFailedEmail(submission, {
-        kind: diag.kind,
-        message: "message" in diag ? diag.message : undefined,
-        status: "status" in diag ? diag.status : undefined,
-        body: "body" in diag ? diag.body : undefined,
-      });
-      await sendDevAlert({ subject, html, text });
-    } catch (alertErr) {
-      console.warn(
-        "[pandadoc webhook] failed to send notify-failure alert",
-        alertErr,
-      );
-    }
-  }
-}

@@ -100,6 +100,19 @@ export function opsStalledSms(s: Submission): string {
 }
 
 /**
+ * Ops alert when a known setter (matched by phone) submits a NEW deal
+ * after having previously signed. Their prior contract is reused, so
+ * no Pandadoc round-trip needed and Michael doesn't have to counter-sign.
+ */
+export function opsReturningSetterSms(s: Submission): string {
+  return [
+    `JV RETURNING setter — new deal, contract reused:`,
+    `${setterFullName(s)} for ${shortProperty(s)}.`,
+    `Admin: ${adminLink(s)}`,
+  ].join(" ");
+}
+
+/**
  * Ops alert when the setter just finished signing — Michael's cue to
  * counter-sign in PandaDoc. Includes admin link with one-tap access.
  */

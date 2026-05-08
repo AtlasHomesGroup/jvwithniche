@@ -45,32 +45,37 @@ export default async function SignPage({
     submission.signedAt
   ) {
     const viewHref = `/view/${submission.returnLinkToken}`;
+    // When a setter we already have on file submits a NEW deal, we
+    // inherit their prior signature and they land here without ever
+    // seeing the embedded Pandadoc iframe — so make Calendly the
+    // primary CTA and skip the "we'll reach out via WhatsApp" copy
+    // since the closer flow now centers on the booking link.
     return (
       <SignLayout
         eyebrow="Signed"
-        title="You’re all set - we’ve got your signed agreement."
+        title="Welcome back — you’re all set."
       >
         <p className="text-sm text-brand-text-muted">
-          Michael and the Niche acquisitions team have been notified.
-          We&apos;ll reach out via WhatsApp shortly to discuss next steps.
+          We already have your JV agreement on file. The next step is to
+          pick a 30-minute slot with our closer.
         </p>
-        {calendlyUrl && (
-          <div className="mt-6 rounded-xl border border-brand-orange/30 bg-brand-orange-light/40 p-4">
+        {calendlyUrl ? (
+          <div className="mt-6 rounded-xl border border-brand-orange/30 bg-brand-orange-light/40 p-5">
             <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-brand-orange">
-              Next: book your kickoff call
+              Book your kickoff call
             </p>
             <p className="mt-1 text-sm text-brand-text-dark">
-              Pick a 30-minute slot with our closer to walk through the deal.
+              Your name, email, and the property are pre-filled — just pick a time.
             </p>
-            <Button asChild className="mt-3">
+            <Button asChild className="mt-4">
               <a href={calendlyUrl} target="_blank" rel="noopener noreferrer">
                 Book your call
               </a>
             </Button>
           </div>
-        )}
+        ) : null}
         <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-          <Button asChild>
+          <Button asChild variant={calendlyUrl ? "outline" : "default"}>
             <Link href={viewHref}>View your submission & agreement</Link>
           </Button>
           <Button asChild variant="outline">
