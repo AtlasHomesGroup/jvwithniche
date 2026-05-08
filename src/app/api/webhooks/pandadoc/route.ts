@@ -6,7 +6,10 @@ import { submissions } from "@/db/schema";
 import { downloadSignedPdf } from "@/lib/pandadoc/client";
 import { verifyPandaDocSignature } from "@/lib/pandadoc/verify";
 import { uploadSignedPdf } from "@/lib/blob-storage";
-import { runPostSigningSideEffects } from "@/lib/post-sign/side-effects";
+import {
+  notifyOpsSetterSigned,
+  runPostSigningSideEffects,
+} from "@/lib/post-sign/side-effects";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -17,6 +20,9 @@ interface PandaDocWebhookEvent {
     id?: string;
     status?: string;
     name?: string;
+    /** Email of the user who took the most recent action (e.g. signed)
+     *  on this document. Present on recipient_completed events. */
+    action_by?: string;
     metadata?: Record<string, string>;
   };
 }
@@ -123,6 +129,32 @@ async function processEvent(event: PandaDocWebhookEvent): Promise<void> {
       eventStatus: event.data?.status,
     }),
   );
+
+  // Setter just completed their part — fires before document.completed
+  // because Michael is signing_order=2. Trip the "Michael needs to
+  // counter-sign" ops SMS immediately so he gets pinged at the right
+  // moment, not after he's already signed.
+  if (event.event === "recipient_completed") {
+    const actionBy = event.data?.action_by?.toLowerCase().trim();
+    const setterEmail = submission.submitterEmail?.toLowerCase().trim();
+    if (actionBy && setterEmail && actionBy === setterEmail) {
+      console.info(
+        "[pandadoc webhook] setter completed signature",
+        JSON.stringify({ submissionId: submission.id, actionBy }),
+      );
+      await notifyOpsSetterSigned(submission);
+    } else {
+      console.info(
+        "[pandadoc webhook] recipient_completed (not setter, ignoring)",
+        JSON.stringify({
+          submissionId: submission.id,
+          actionBy,
+          setterEmail,
+        }),
+      );
+    }
+    return;
+  }
 
   const isComplete =
     event.event === "document_state_changed" &&

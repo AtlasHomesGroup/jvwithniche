@@ -29,6 +29,13 @@
       "when": 1778210325735,
       "tag": "0003_gray_scalphunter",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1778250507512,
+      "tag": "0004_yellow_blob",
+      "breakpoints": true
     }
   ]
 }

@@ -59,6 +59,11 @@ export const submissions = pgTable(
     esignDocumentId: text("esign_document_id"),
     signedPdfUrl: text("signed_pdf_url"),
     signedAt: timestamp("signed_at", { withTimezone: true }),
+    // When the SETTER (signing_order=1) completed their part — fires
+    // before document.completed since Michael is signing_order=2. Used
+    // as the idempotency gate for the "Michael needs to counter-sign"
+    // ops SMS so it lands as soon as the setter signs (not after both).
+    setterSignedAt: timestamp("setter_signed_at", { withTimezone: true }),
     stalledAlertSentAt: timestamp("stalled_alert_sent_at", {
       withTimezone: true,
     }),

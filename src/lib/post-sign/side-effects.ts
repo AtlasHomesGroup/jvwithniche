@@ -9,8 +9,10 @@
  * rest of the fan-out.
  */
 
-import type { Submission } from "@/db/schema";
+import { and, eq, isNull } from "drizzle-orm";
 
+import { db } from "@/db/client";
+import { submissions, type Submission } from "@/db/schema";
 import { pushSubmissionToCrm } from "@/lib/crm/push";
 import {
   sendCustomerEmail,
@@ -51,7 +53,11 @@ export async function runPostSigningSideEffects(
     //   bound number" workflow.
     submitterSignedEmailFanout(submission),
     submitterSignedSmsFanout(submission),
-    opsSignedSmsFanout(submission, isReturning),
+    // Fallback path: if the recipient_completed event for the setter
+    // was missed (Pandadoc retry, network blip, etc.), this catches up
+    // here. The gate inside notifyOpsSetterSigned makes it a no-op
+    // when the SMS already fired earlier.
+    notifyOpsSetterSigned(submission, isReturning),
     pushSubmissionToCrm(submission).catch((err) => {
       console.error(
         "[post-sign] unexpected CRM push throw",
@@ -59,6 +65,57 @@ export async function runPostSigningSideEffects(
       );
     }),
   ]);
+}
+
+/**
+ * Idempotent ops-SMS sender — fires `opsSignedSms` exactly once per
+ * submission via the `setter_signed_at` column gate. Safe to call from
+ * both:
+ *   - the recipient_completed webhook handler (setter just signed) —
+ *     the primary trigger, fires the SMS at the right moment so Michael
+ *     gets pinged before he opens his Pandadoc email
+ *   - the document_state_changed handler (full doc complete) — fallback
+ *     in case the recipient_completed event was dropped
+ *
+ * The atomic conditional UPDATE on `setter_signed_at` (set only if NULL)
+ * guarantees at-most-once delivery across concurrent webhook events.
+ */
+export async function notifyOpsSetterSigned(
+  submission: Submission,
+  _isReturning: boolean = false,
+): Promise<void> {
+  if (!smsConfigured()) return;
+  const stamp = await db
+    .update(submissions)
+    .set({ setterSignedAt: new Date() })
+    .where(
+      and(
+        eq(submissions.id, submission.id),
+        isNull(submissions.setterSignedAt),
+      ),
+    )
+    .returning({ id: submissions.id });
+  if (stamp.length === 0) {
+    console.info(
+      "[post-sign] ops setter-signed sms skipped — already fired",
+      submission.id,
+    );
+    return;
+  }
+  const results = await sendOpsSms(opsSignedSms(submission));
+  for (const r of results) {
+    if (!r.sent) {
+      console.warn(
+        "[post-sign] ops setter-signed sms failed",
+        JSON.stringify({ submissionId: submission.id, to: r.to, reason: r.reason }),
+      );
+    } else {
+      console.info(
+        "[post-sign] ops setter-signed sms sent",
+        JSON.stringify({ submissionId: submission.id, to: r.to, sid: r.sid }),
+      );
+    }
+  }
 }
 
 async function operatorWhatsappNotify(submission: Submission): Promise<void> {
@@ -179,23 +236,3 @@ async function submitterSignedSmsFanout(
   );
 }
 
-async function opsSignedSmsFanout(
-  submission: Submission,
-  _isReturning: boolean,
-): Promise<void> {
-  if (!smsConfigured()) return;
-  const results = await sendOpsSms(opsSignedSms(submission));
-  for (const r of results) {
-    if (!r.sent) {
-      console.warn(
-        "[post-sign] ops signed sms failed",
-        JSON.stringify({ submissionId: submission.id, to: r.to, reason: r.reason }),
-      );
-    } else {
-      console.info(
-        "[post-sign] ops signed sms sent",
-        JSON.stringify({ submissionId: submission.id, to: r.to, sid: r.sid }),
-      );
-    }
-  }
-}
