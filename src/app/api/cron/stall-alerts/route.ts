@@ -12,10 +12,16 @@ import {
 import {
   autoDeletedDigestEmail,
   stalledDraftEmail,
+  submitterFinishSubmissionEmail,
   submitterPleaseSignEmail,
 } from "@/lib/email/templates";
+import { isFormComplete } from "@/lib/form-complete";
 import { isConfigured as smsConfigured, sendOpsSms, sendSms } from "@/lib/sms/client";
-import { opsStalledSms, submitterPleaseSignSms } from "@/lib/sms/templates";
+import {
+  opsStalledSms,
+  submitterFinishSubmissionSms,
+  submitterPleaseSignSms,
+} from "@/lib/sms/templates";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -77,16 +83,31 @@ function isAuthorized(req: Request): boolean {
 async function runStalledAlerts(): Promise<Submission[]> {
   const cutoff = new Date(Date.now() - stalledThresholdMs());
 
-  const stalled = await db
+  // Two stall states fire the same notification once-per-submission:
+  //   1. status=awaiting_signature  (Pandadoc generated, didn't sign)
+  //   2. status=draft + form complete (didn't even press "Generate")
+  // Pull both in one query, then filter the drafts in JS to those whose
+  // formData passes full validation. The branching of message wording
+  // happens at the per-submission send call further down.
+  const candidates = await db
     .select()
     .from(submissions)
     .where(
       and(
-        eq(submissions.status, "awaiting_signature"),
+        or(
+          eq(submissions.status, "awaiting_signature"),
+          eq(submissions.status, "draft"),
+        ),
         lt(submissions.lastActivityAt, cutoff),
         isNull(submissions.stalledAlertSentAt),
       ),
     );
+
+  const stalled = candidates.filter(
+    (s) =>
+      s.status === "awaiting_signature" ||
+      (s.status === "draft" && isFormComplete(s.formData)),
+  );
 
   for (const s of stalled) {
     // 1. Ops alert (Michael).
@@ -106,8 +127,14 @@ async function runStalledAlerts(): Promise<Submission[]> {
     }
 
     // 2. Customer-facing email nudge - skip if no email on file.
+    // Wording differs by stage:
+    //   draft  → "you didn't press Generate, do that here"
+    //   awaiting_signature → "you didn't sign your contract, sign here"
+    const isDraftStall = s.status === "draft";
     if (s.submitterEmail) {
-      const cust = submitterPleaseSignEmail(s);
+      const cust = isDraftStall
+        ? submitterFinishSubmissionEmail(s)
+        : submitterPleaseSignEmail(s);
       const custResult = await sendCustomerEmail({
         to: s.submitterEmail,
         subject: cust.subject,
@@ -200,9 +227,13 @@ async function maybeSendSms(s: Submission): Promise<void> {
   } else if (!consent) {
     console.info("[cron stall-alerts] customer sms skipped - no consent", s.id);
   } else {
+    const body =
+      s.status === "draft"
+        ? submitterFinishSubmissionSms(s)
+        : submitterPleaseSignSms(s);
     const result = await sendSms({
       to: s.submitterPhoneE164,
-      body: submitterPleaseSignSms(s),
+      body,
     });
     if (!result.sent) {
       console.warn(

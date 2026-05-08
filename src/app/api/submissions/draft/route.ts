@@ -117,11 +117,23 @@ async function maybeFireFormStartedSms(draftId: string): Promise<void> {
 
   const fd =
     (submission.formData as
-      | { firstName?: unknown; phoneE164?: unknown }
+      | {
+          firstName?: unknown;
+          phoneE164?: unknown;
+          prospectFirstName?: unknown;
+        }
       | null) ?? {};
   const firstName = typeof fd.firstName === "string" ? fd.firstName.trim() : "";
   const phone = typeof fd.phoneE164 === "string" ? fd.phoneE164.trim() : "";
-  if (!firstName || !phone) return; // not enough to message anyone yet
+  // Only fire after the setter has progressed past the first screen.
+  // prospectFirstName is the first required field on screen 2 (Prospect),
+  // so a non-empty value here proves they've actually moved on rather
+  // than abandoned mid-typing on the setter step.
+  const prospectFirstName =
+    typeof fd.prospectFirstName === "string"
+      ? fd.prospectFirstName.trim()
+      : "";
+  if (!firstName || !phone || !prospectFirstName) return;
 
   // Race-safe gate: only the row where form_started_sms_at IS NULL gets
   // stamped. Concurrent autosaves see stamped row → 0 rows updated → skip.

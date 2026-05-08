@@ -467,6 +467,51 @@ If the button doesn't work, copy and paste this into your browser:<br/>
 }
 
 /**
+ * Customer-facing email sent when a draft is fully filled but the
+ * setter never pressed "Generate JV agreement". Bumps them back to
+ * /submit to finish the last click — the cookie picks up where they
+ * left off.
+ */
+export function submitterFinishSubmissionEmail(s: Submission): {
+  subject: string;
+  html: string;
+  text: string;
+} {
+  const fn = firstName(s);
+  const propertyLineText = propertyLine(s);
+  const submitLink = `${siteUrl()}/submit`;
+  const subject = `One click left: generate your JV agreement for ${propertyLineText}`;
+
+  const html = customerShell(
+    `<h1 style="margin:0 0 12px;color:${NICHE_NAVY};font-size:22px;font-weight:600;">Hi ${escapeHtml(fn)} — you're one click from done</h1>
+<p style="margin:0 0 14px;color:${NICHE_TEXT};font-size:15px;line-height:1.55;">
+You filled out the JV submission for <strong>${escapeHtml(propertyLineText)}</strong>, but didn't press <em>Generate my JV agreement</em>. Until you do that, the contract isn't created and we can't start working with you.
+</p>
+<div style="margin:22px 0;">${ctaButton(submitLink, "Open my submission and generate")}</div>
+<p style="margin:0 0 14px;color:${NICHE_MUTED};font-size:14px;line-height:1.55;">
+Click the button, scroll to the bottom of the form, and press the big orange <em>Generate my JV agreement</em> button. Once you sign, you'll unlock a Calendly link to book a kickoff call with our closer.
+</p>
+<p style="margin:18px 0 0;color:${NICHE_MUTED};font-size:13px;">
+If the button doesn't work, copy and paste this into your browser:<br/>
+<span style="color:${NICHE_NAVY};word-break:break-all;">${escapeHtml(submitLink)}</span>
+</p>`,
+    `Generate your JV agreement for ${propertyLineText}`,
+  );
+
+  const text = [
+    `Hi ${fn} — you're one click from done`,
+    "",
+    `You filled out the JV submission for ${propertyLineText}, but didn't press "Generate my JV agreement".`,
+    "Open your submission and finish:",
+    submitLink,
+    "",
+    "Press the big orange button at the bottom of the form. Once you sign, you'll unlock a Calendly link to book a kickoff call.",
+  ].join("\n");
+
+  return { subject, html, text };
+}
+
+/**
  * Customer-facing thank-you email sent the moment the JV partner finishes
  * signing. Surfaces their private portal link and the prefilled Calendly
  * URL.

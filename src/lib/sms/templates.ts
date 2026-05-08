@@ -55,6 +55,19 @@ function fullProperty(s: Submission): string {
 }
 
 /**
+ * Stalled-draft nudge — the setter filled the whole form but never
+ * pressed "Generate my JV agreement". Routes them back to /submit
+ * (cookie picks up the draft) so they can press the button.
+ */
+export function submitterFinishSubmissionSms(s: Submission): string {
+  return [
+    `Hi ${firstName(s)} — your JV submission for ${shortProperty(s)} is one click away.`,
+    ``,
+    `Open the form and press the orange "Generate my JV agreement" button: ${siteUrl()}/submit`,
+  ].join("\n");
+}
+
+/**
  * Stalled-signing nudge sent alongside the email when the JV setter
  * hasn't signed within STALLED_ALERT_THRESHOLD_MINUTES (currently 5min).
  */
