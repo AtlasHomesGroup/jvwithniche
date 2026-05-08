@@ -42,6 +42,18 @@ function adminLink(s: Submission): string {
   return `${siteUrl()}/admin/submissions/${s.id}`;
 }
 
+function pandadocUrl(s: Submission): string | null {
+  if (!s.esignDocumentId) return null;
+  return `https://app.pandadoc.com/a/#/documents/${s.esignDocumentId}`;
+}
+
+function fullProperty(s: Submission): string {
+  return [s.propertyStreet, s.propertyCity, s.propertyState]
+    .map((v) => v?.trim())
+    .filter(Boolean)
+    .join(", ") || "(no property)";
+}
+
 /**
  * Stalled-signing nudge sent alongside the email when the JV setter
  * hasn't signed within STALLED_ALERT_THRESHOLD_MINUTES (currently 5min).
@@ -114,14 +126,24 @@ export function opsReturningSetterSms(s: Submission): string {
 
 /**
  * Ops alert when the setter just finished signing — Michael's cue to
- * counter-sign in PandaDoc. Includes admin link with one-tap access.
+ * counter-sign in PandaDoc. Includes both the admin and the PandaDoc
+ * deep link so Michael can jump straight to the document.
  */
 export function opsSignedSms(s: Submission): string {
-  return [
-    `JV SIGNED by setter — Michael needs to counter-sign:`,
-    `${setterFullName(s)} for ${shortProperty(s)}.`,
-    `PandaDoc + admin: ${adminLink(s)}`,
-  ].join(" ");
+  const lines = [
+    `JV signed by setter. Michael needs to counter-sign.`,
+    ``,
+    setterFullName(s),
+    fullProperty(s),
+    ``,
+    `Admin: ${adminLink(s)}`,
+  ];
+  const pdUrl = pandadocUrl(s);
+  if (pdUrl) {
+    lines.push(``);
+    lines.push(`PandaDoc: ${pdUrl}`);
+  }
+  return lines.join("\n");
 }
 
 /**
@@ -133,12 +155,13 @@ export function submitterSignedSms(s: Submission): string {
   const calendlyUrl = buildCalendlyUrl(s);
   const viewLink = `${siteUrl()}/view/${s.returnLinkToken}`;
   const calendlyLine = calendlyUrl
-    ? `Book your kickoff call: ${calendlyUrl}.`
+    ? `Book your kickoff call: ${calendlyUrl}`
     : `We'll send a calendar link shortly.`;
   return [
     `Hi ${firstName(s)} — JV agreement signed ✓.`,
+    ``,
     calendlyLine,
-    `Your portal: ${viewLink}.`,
-    `Reply STOP to opt out.`,
-  ].join(" ");
+    ``,
+    `Your portal: ${viewLink}`,
+  ].join("\n");
 }
