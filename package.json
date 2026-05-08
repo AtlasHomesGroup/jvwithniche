@@ -19,7 +19,8 @@
     "admin:create": "node --env-file=.env.local --import tsx scripts/admin-create.ts",
     "notify:resend": "node --env-file=.env.local --import tsx scripts/resend-notify.ts",
     "crm:mark": "node --env-file=.env.local --import tsx scripts/mark-crm-synced.ts",
-    "sms:test": "node --env-file=.env.local --import tsx scripts/sms-test.ts"
+    "sms:test": "node --env-file=.env.local --import tsx scripts/sms-test.ts",
+    "sms:probe-ops": "node --env-file=.env.local --import tsx scripts/ops-sms-probe.ts"
   },
   "dependencies": {
     "@googlemaps/js-api-loader": "^2.0.2",
