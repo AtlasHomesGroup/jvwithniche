@@ -18,7 +18,8 @@
     "crm:test": "node --env-file=.env.local --import tsx scripts/crm-test.ts",
     "admin:create": "node --env-file=.env.local --import tsx scripts/admin-create.ts",
     "notify:resend": "node --env-file=.env.local --import tsx scripts/resend-notify.ts",
-    "crm:mark": "node --env-file=.env.local --import tsx scripts/mark-crm-synced.ts"
+    "crm:mark": "node --env-file=.env.local --import tsx scripts/mark-crm-synced.ts",
+    "sms:test": "node --env-file=.env.local --import tsx scripts/sms-test.ts"
   },
   "dependencies": {
     "@googlemaps/js-api-loader": "^2.0.2",
@@ -42,6 +43,7 @@
     "react-hook-form": "^7.73.1",
     "resend": "^6.12.2",
     "tailwind-merge": "^3.5.0",
+    "twilio": "^6.0.2",
     "zod": "^4.3.6"
   },
   "devDependencies": {

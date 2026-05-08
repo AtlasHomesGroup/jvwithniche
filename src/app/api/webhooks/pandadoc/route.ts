@@ -20,6 +20,8 @@ import {
   submitterSignedEmail,
   whatsappNotifyFailedEmail,
 } from "@/lib/email/templates";
+import { isConfigured as smsConfigured, sendSms } from "@/lib/sms/client";
+import { submitterSignedSms } from "@/lib/sms/templates";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -183,6 +185,7 @@ async function processEvent(event: PandaDocWebhookEvent): Promise<void> {
   await Promise.allSettled([
     notifyOperatorOfSignedWrapper(updated),
     sendSubmitterSignedEmailWrapper(updated),
+    sendSubmitterSignedSmsWrapper(updated),
     pushSubmissionToCrm(updated).catch((err) => {
       // pushSubmissionToCrm catches its own errors, but we add a safety
       // net here so an unexpected throw can't abort other settled calls.
@@ -192,6 +195,50 @@ async function processEvent(event: PandaDocWebhookEvent): Promise<void> {
       );
     }),
   ]);
+}
+
+async function sendSubmitterSignedSmsWrapper(
+  submission: Submission,
+): Promise<void> {
+  if (!smsConfigured()) {
+    console.info(
+      "[pandadoc webhook] sms skipped - twilio not configured",
+      submission.id,
+    );
+    return;
+  }
+  if (!submission.submitterPhoneE164) {
+    console.info(
+      "[pandadoc webhook] sms skipped - no phone",
+      submission.id,
+    );
+    return;
+  }
+  const fd =
+    (submission.formData as { whatsappConsent?: unknown } | null) ?? {};
+  if (fd.whatsappConsent !== true) {
+    console.info(
+      "[pandadoc webhook] sms skipped - no consent",
+      submission.id,
+    );
+    return;
+  }
+  const result = await sendSms({
+    to: submission.submitterPhoneE164,
+    body: submitterSignedSms(submission),
+  });
+  if (!result.sent) {
+    console.warn(
+      "[pandadoc webhook] sms send failed",
+      submission.id,
+      result.reason,
+    );
+    return;
+  }
+  console.info(
+    "[pandadoc webhook] submitter sms sent",
+    JSON.stringify({ submissionId: submission.id, sid: result.sid }),
+  );
 }
 
 async function sendSubmitterSignedEmailWrapper(

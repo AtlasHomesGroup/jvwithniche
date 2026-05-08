@@ -14,6 +14,8 @@ import {
   stalledDraftEmail,
   submitterPleaseSignEmail,
 } from "@/lib/email/templates";
+import { isConfigured as smsConfigured, sendSms } from "@/lib/sms/client";
+import { submitterPleaseSignSms } from "@/lib/sms/templates";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -103,7 +105,7 @@ async function runStalledAlerts(): Promise<Submission[]> {
       // Don't continue - we still want to try the customer email.
     }
 
-    // 2. Customer-facing nudge - skip if no email on file.
+    // 2. Customer-facing email nudge - skip if no email on file.
     if (s.submitterEmail) {
       const cust = submitterPleaseSignEmail(s);
       const custResult = await sendCustomerEmail({
@@ -114,19 +116,23 @@ async function runStalledAlerts(): Promise<Submission[]> {
       });
       if (!custResult.sent) {
         console.warn(
-          "[cron stall-alerts] customer send failed",
+          "[cron stall-alerts] customer email send failed",
           s.id,
           custResult.reason,
         );
       }
     } else {
       console.info(
-        "[cron stall-alerts] no submitter email - customer nudge skipped",
+        "[cron stall-alerts] no submitter email - email nudge skipped",
         s.id,
       );
     }
 
-    // Mark sent if either email succeeded; otherwise leave the flag null
+    // 3. Customer-facing SMS nudge - gated on consent + phone + Twilio
+    // configured. Best-effort, runs in parallel with the email path.
+    await maybeSendSms(s);
+
+    // Mark sent if anything succeeded; otherwise leave the flag null
     // so the next cron run retries.
     if (opsResult.sent || s.submitterEmail) {
       await db
@@ -170,4 +176,44 @@ async function runAutoDelete(): Promise<Submission[]> {
   await sendDevAlert({ subject, html, text });
 
   return stale;
+}
+
+/**
+ * Best-effort SMS to the submitter when they haven't signed in time.
+ * Gated on:
+ *   - Twilio configured (TWILIO_* envs present)
+ *   - submitter has an E.164 phone on file
+ *   - submitter ticked the WhatsApp/SMS consent box on the form
+ * Any miss = silent skip with an info log.
+ */
+async function maybeSendSms(s: Submission): Promise<void> {
+  if (!smsConfigured()) {
+    console.info("[cron stall-alerts] sms skipped - twilio not configured", s.id);
+    return;
+  }
+  if (!s.submitterPhoneE164) {
+    console.info("[cron stall-alerts] sms skipped - no phone", s.id);
+    return;
+  }
+  const fd = (s.formData as { whatsappConsent?: unknown } | null) ?? {};
+  if (fd.whatsappConsent !== true) {
+    console.info("[cron stall-alerts] sms skipped - no consent", s.id);
+    return;
+  }
+  const result = await sendSms({
+    to: s.submitterPhoneE164,
+    body: submitterPleaseSignSms(s),
+  });
+  if (!result.sent) {
+    console.warn(
+      "[cron stall-alerts] sms send failed",
+      s.id,
+      result.reason,
+    );
+    return;
+  }
+  console.info(
+    "[cron stall-alerts] sms sent",
+    JSON.stringify({ submissionId: s.id, sid: result.sid }),
+  );
 }
