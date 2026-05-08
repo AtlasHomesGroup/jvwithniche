@@ -21,6 +21,36 @@ export function isConfigured(): boolean {
   );
 }
 
+/** Comma-separated E.164 list of ops phone numbers. Used to fan out
+ *  SMS to internal recipients (Rashad + Michael). */
+export function opsSmsNumbers(): string[] {
+  const raw = process.env.OPS_NOTIFY_SMS?.trim();
+  if (!raw) return [];
+  return raw
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+/**
+ * Send the same SMS body to every number configured in OPS_NOTIFY_SMS.
+ * Returns one result per recipient. Empty array if no ops numbers
+ * are configured (silent no-op).
+ */
+export async function sendOpsSms(
+  body: string,
+): Promise<Array<{ to: string; sent: boolean; sid?: string; reason?: string }>> {
+  const targets = opsSmsNumbers();
+  if (targets.length === 0) return [];
+  const results = await Promise.all(
+    targets.map(async (to) => {
+      const r = await sendSms({ to, body });
+      return { to, ...r };
+    }),
+  );
+  return results;
+}
+
 /**
  * Send a single SMS. Prefers TWILIO_MESSAGING_SERVICE_SID (which routes
  * through the 10DLC-registered campaign and pools senders) and falls

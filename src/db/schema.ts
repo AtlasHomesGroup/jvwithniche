@@ -62,6 +62,11 @@ export const submissions = pgTable(
     stalledAlertSentAt: timestamp("stalled_alert_sent_at", {
       withTimezone: true,
     }),
+    // Idempotency flag for the "form started" SMS fanout (ops + setter).
+    // Set the first time a draft save lands with both firstName + phone.
+    formStartedSmsAt: timestamp("form_started_sms_at", {
+      withTimezone: true,
+    }),
 
     // CRM
     crmOpportunityId: text("crm_opportunity_id"),

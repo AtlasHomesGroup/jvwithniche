@@ -14,8 +14,8 @@ import {
   stalledDraftEmail,
   submitterPleaseSignEmail,
 } from "@/lib/email/templates";
-import { isConfigured as smsConfigured, sendSms } from "@/lib/sms/client";
-import { submitterPleaseSignSms } from "@/lib/sms/templates";
+import { isConfigured as smsConfigured, sendOpsSms, sendSms } from "@/lib/sms/client";
+import { opsStalledSms, submitterPleaseSignSms } from "@/lib/sms/templates";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -191,29 +191,42 @@ async function maybeSendSms(s: Submission): Promise<void> {
     console.info("[cron stall-alerts] sms skipped - twilio not configured", s.id);
     return;
   }
-  if (!s.submitterPhoneE164) {
-    console.info("[cron stall-alerts] sms skipped - no phone", s.id);
-    return;
-  }
+
+  // Customer SMS: gated on phone-on-file + explicit consent.
   const fd = (s.formData as { whatsappConsent?: unknown } | null) ?? {};
-  if (fd.whatsappConsent !== true) {
-    console.info("[cron stall-alerts] sms skipped - no consent", s.id);
-    return;
+  const consent = fd.whatsappConsent === true;
+  if (!s.submitterPhoneE164) {
+    console.info("[cron stall-alerts] customer sms skipped - no phone", s.id);
+  } else if (!consent) {
+    console.info("[cron stall-alerts] customer sms skipped - no consent", s.id);
+  } else {
+    const result = await sendSms({
+      to: s.submitterPhoneE164,
+      body: submitterPleaseSignSms(s),
+    });
+    if (!result.sent) {
+      console.warn(
+        "[cron stall-alerts] customer sms send failed",
+        s.id,
+        result.reason,
+      );
+    } else {
+      console.info(
+        "[cron stall-alerts] customer sms sent",
+        JSON.stringify({ submissionId: s.id, sid: result.sid }),
+      );
+    }
   }
-  const result = await sendSms({
-    to: s.submitterPhoneE164,
-    body: submitterPleaseSignSms(s),
-  });
-  if (!result.sent) {
-    console.warn(
-      "[cron stall-alerts] sms send failed",
-      s.id,
-      result.reason,
-    );
-    return;
+
+  // Ops fan-out (Rashad + Michael) - fires regardless of customer
+  // consent since these are internal numbers we own. Best-effort.
+  const opsResults = await sendOpsSms(opsStalledSms(s));
+  for (const r of opsResults) {
+    if (!r.sent) {
+      console.warn(
+        "[cron stall-alerts] ops sms failed",
+        JSON.stringify({ submissionId: s.id, to: r.to, reason: r.reason }),
+      );
+    }
   }
-  console.info(
-    "[cron stall-alerts] sms sent",
-    JSON.stringify({ submissionId: s.id, sid: result.sid }),
-  );
 }

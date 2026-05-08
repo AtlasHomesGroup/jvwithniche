@@ -17,6 +17,10 @@ import { db } from "@/db/client";
 import { submissions } from "@/db/schema";
 import { isConfigured, sendSms } from "@/lib/sms/client";
 import {
+  opsFormStartedSms,
+  opsSignedSms,
+  opsStalledSms,
+  submitterFormStartedSms,
   submitterPleaseSignSms,
   submitterSignedSms,
 } from "@/lib/sms/templates";
@@ -37,21 +41,24 @@ async function main() {
     process.exit(1);
   }
 
-  const pleaseSign = submitterPleaseSignSms(s);
-  const signed = submitterSignedSms(s);
+  const templates: Array<[string, string]> = [
+    ["submitterFormStartedSms (setter, on form start)", submitterFormStartedSms(s)],
+    ["opsFormStartedSms (Rashad+Michael, on form start)", opsFormStartedSms(s)],
+    ["submitterPleaseSignSms (setter, stalled)", submitterPleaseSignSms(s)],
+    ["opsStalledSms (Rashad+Michael, stalled)", opsStalledSms(s)],
+    ["submitterSignedSms (setter, on sign)", submitterSignedSms(s)],
+    ["opsSignedSms (Rashad+Michael, on sign)", opsSignedSms(s)],
+  ];
 
-  console.log("\n--- 1. submitterPleaseSignSms ---");
-  console.log(`length: ${pleaseSign.length} chars`);
-  console.log(pleaseSign);
-
-  console.log("\n--- 2. submitterSignedSms ---");
-  console.log(`length: ${signed.length} chars`);
-  console.log(signed);
+  for (const [label, body] of templates) {
+    console.log(`\n--- ${label} (${body.length} chars) ---`);
+    console.log(body);
+  }
 
   const overrideTo = process.env.SMS_TEST_TO?.trim();
   if (!overrideTo) {
     console.log(
-      "\n(dry-run — set SMS_TEST_TO=+1XXXXXXXXXX to actually send to that number)",
+      "\n(dry-run — set SMS_TEST_TO=+1XXXXXXXXXX to actually send all 6 to that number)",
     );
     return;
   }
@@ -59,11 +66,11 @@ async function main() {
     console.error("\nTwilio is not configured — cannot send. Aborting.");
     process.exit(1);
   }
-  console.log(`\nSending both messages to ${overrideTo}...`);
-  const r1 = await sendSms({ to: overrideTo, body: pleaseSign });
-  console.log("  please-sign:", r1);
-  const r2 = await sendSms({ to: overrideTo, body: signed });
-  console.log("  signed:     ", r2);
+  console.log(`\nSending all 6 messages to ${overrideTo}...`);
+  for (const [label, body] of templates) {
+    const r = await sendSms({ to: overrideTo, body });
+    console.log(`  ${label}:`, r);
+  }
 }
 
 void main().then(() => process.exit(0));

@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { and, eq, isNull } from "drizzle-orm";
 
 import { badRequest, serverError } from "@/lib/api";
+import { db } from "@/db/client";
+import { submissions } from "@/db/schema";
 import {
   readDraftCookie,
   writeDraftCookie,
@@ -10,6 +13,11 @@ import {
   getOrCreateDraft,
   updateDraft,
 } from "@/lib/draft-store";
+import { isConfigured as smsConfigured, sendOpsSms, sendSms } from "@/lib/sms/client";
+import {
+  opsFormStartedSms,
+  submitterFormStartedSms,
+} from "@/lib/sms/templates";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -76,6 +84,11 @@ async function handleWrite(req: Request) {
       return res;
     }
 
+    // Best-effort: fire the "form started" SMS once per draft, the moment
+    // we have the setter's first name + phone. Atomic conditional UPDATE
+    // gates the send so concurrent autosaves can't double-fire.
+    void maybeFireFormStartedSms(updated.id);
+
     const res = NextResponse.json({
       draftId: updated.id,
       updatedAt: updated.updatedAt.toISOString(),
@@ -89,3 +102,73 @@ async function handleWrite(req: Request) {
 }
 
 export { handleWrite as PATCH, handleWrite as POST };
+
+async function maybeFireFormStartedSms(draftId: string): Promise<void> {
+  if (!smsConfigured()) return;
+
+  // Re-fetch the full submission row (DraftRecord is a slim view).
+  const [submission] = await db
+    .select()
+    .from(submissions)
+    .where(eq(submissions.id, draftId))
+    .limit(1);
+  if (!submission) return;
+  if (submission.formStartedSmsAt) return; // already fired
+
+  const fd =
+    (submission.formData as
+      | { firstName?: unknown; phoneE164?: unknown }
+      | null) ?? {};
+  const firstName = typeof fd.firstName === "string" ? fd.firstName.trim() : "";
+  const phone = typeof fd.phoneE164 === "string" ? fd.phoneE164.trim() : "";
+  if (!firstName || !phone) return; // not enough to message anyone yet
+
+  // Race-safe gate: only the row where form_started_sms_at IS NULL gets
+  // stamped. Concurrent autosaves see stamped row → 0 rows updated → skip.
+  const stamp = await db
+    .update(submissions)
+    .set({ formStartedSmsAt: new Date() })
+    .where(
+      and(
+        eq(submissions.id, submission.id),
+        isNull(submissions.formStartedSmsAt),
+      ),
+    )
+    .returning({ id: submissions.id });
+  if (stamp.length === 0) return; // someone else got there first
+
+  try {
+    const setterResult = await sendSms({
+      to: phone,
+      body: submitterFormStartedSms(submission),
+    });
+    if (!setterResult.sent) {
+      console.warn(
+        "[draft] setter form-started sms failed",
+        submission.id,
+        setterResult.reason,
+      );
+    } else {
+      console.info(
+        "[draft] setter form-started sms sent",
+        JSON.stringify({ submissionId: submission.id, sid: setterResult.sid }),
+      );
+    }
+
+    const opsResults = await sendOpsSms(opsFormStartedSms(submission));
+    for (const r of opsResults) {
+      if (!r.sent) {
+        console.warn(
+          "[draft] ops form-started sms failed",
+          JSON.stringify({ submissionId: submission.id, to: r.to, reason: r.reason }),
+        );
+      }
+    }
+  } catch (err) {
+    console.error(
+      "[draft] form-started sms threw",
+      submission.id,
+      err instanceof Error ? err.message : String(err),
+    );
+  }
+}

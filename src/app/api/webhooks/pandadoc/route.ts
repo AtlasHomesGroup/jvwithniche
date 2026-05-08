@@ -20,8 +20,8 @@ import {
   submitterSignedEmail,
   whatsappNotifyFailedEmail,
 } from "@/lib/email/templates";
-import { isConfigured as smsConfigured, sendSms } from "@/lib/sms/client";
-import { submitterSignedSms } from "@/lib/sms/templates";
+import { isConfigured as smsConfigured, sendOpsSms, sendSms } from "@/lib/sms/client";
+import { opsSignedSms, submitterSignedSms } from "@/lib/sms/templates";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -186,6 +186,7 @@ async function processEvent(event: PandaDocWebhookEvent): Promise<void> {
     notifyOperatorOfSignedWrapper(updated),
     sendSubmitterSignedEmailWrapper(updated),
     sendSubmitterSignedSmsWrapper(updated),
+    sendOpsSignedSmsWrapper(updated),
     pushSubmissionToCrm(updated).catch((err) => {
       // pushSubmissionToCrm catches its own errors, but we add a safety
       // net here so an unexpected throw can't abort other settled calls.
@@ -195,6 +196,26 @@ async function processEvent(event: PandaDocWebhookEvent): Promise<void> {
       );
     }),
   ]);
+}
+
+async function sendOpsSignedSmsWrapper(
+  submission: Submission,
+): Promise<void> {
+  if (!smsConfigured()) return;
+  const results = await sendOpsSms(opsSignedSms(submission));
+  for (const r of results) {
+    if (!r.sent) {
+      console.warn(
+        "[pandadoc webhook] ops signed sms failed",
+        JSON.stringify({ submissionId: submission.id, to: r.to, reason: r.reason }),
+      );
+    } else {
+      console.info(
+        "[pandadoc webhook] ops signed sms sent",
+        JSON.stringify({ submissionId: submission.id, to: r.to, sid: r.sid }),
+      );
+    }
+  }
 }
 
 async function sendSubmitterSignedSmsWrapper(

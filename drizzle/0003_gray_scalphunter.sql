@@ -1,0 +1,1 @@
+ALTER TABLE "submissions" ADD COLUMN "form_started_sms_at" timestamp with time zone;
