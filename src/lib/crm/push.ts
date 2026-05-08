@@ -40,7 +40,17 @@ export interface PushOutcome {
  */
 export async function pushSubmissionToCrm(
   submission: Submission,
-  opts: { queueItemId?: string; attemptsSoFar?: number } = {},
+  opts: {
+    queueItemId?: string;
+    attemptsSoFar?: number;
+    /**
+     * Bypass the "already synced" guard and create a fresh Lead. Use
+     * when an admin deletes the Salesforce record manually and wants to
+     * re-push from the portal. Auto callers (webhook, cron) leave this
+     * unset so duplicate pushes can't happen by accident.
+     */
+    force?: boolean;
+  } = {},
 ): Promise<PushOutcome> {
   if (!isConfigured()) {
     console.info(
@@ -49,7 +59,11 @@ export async function pushSubmissionToCrm(
     );
     return { kind: "skipped", submissionId: submission.id };
   }
-  if (submission.crmSyncedAt && submission.crmOpportunityId) {
+  if (
+    !opts.force &&
+    submission.crmSyncedAt &&
+    submission.crmOpportunityId
+  ) {
     console.info("[crm] already synced", submission.id);
     return {
       kind: "already_synced",

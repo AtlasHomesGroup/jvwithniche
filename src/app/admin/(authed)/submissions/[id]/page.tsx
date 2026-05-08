@@ -123,7 +123,10 @@ export default async function AdminSubmissionDetailPage({
           }
           footer={
             <div className="flex items-center gap-2">
-              <RetryCrmButton submissionId={s.id} />
+              <RetryCrmButton
+                submissionId={s.id}
+                alreadySynced={Boolean(s.crmSyncedAt && s.crmOpportunityId)}
+              />
               {s.crmSyncedAt && <span>· synced {formatDateTime(s.crmSyncedAt)}</span>}
             </div>
           }

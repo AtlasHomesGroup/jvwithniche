@@ -12,12 +12,13 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
- * Admin-triggered manual CRM push. Runs through the same orchestrator as
- * the automatic webhook path - idempotency guard + retry-queue bookkeeping
- * is already built in, so calling this on a synced submission is a no-op.
+ * Admin-triggered manual CRM push. Always passes `force: true` so an
+ * admin can re-create the Salesforce Lead after manually deleting it on
+ * the CRM side. The auto-flow (webhook, cron) keeps the idempotency
+ * guard, so this can't double-push without an explicit admin click.
  */
 export async function POST(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const admin = await getAdminSession();
@@ -34,7 +35,8 @@ export async function POST(
       .limit(1);
     if (!submission) return badRequest("submission not found");
 
-    const outcome = await pushSubmissionToCrm(submission);
+    const previousLeadId = submission.crmOpportunityId;
+    const outcome = await pushSubmissionToCrm(submission, { force: true });
     await logAdminAction({
       admin,
       actionType: "retry_crm",
@@ -43,6 +45,8 @@ export async function POST(
         outcome: outcome.kind,
         reason: outcome.reason ?? null,
         crmOpportunityId: outcome.crmOpportunityId ?? null,
+        previousLeadId: previousLeadId ?? null,
+        forced: true,
       },
     });
     return NextResponse.json({

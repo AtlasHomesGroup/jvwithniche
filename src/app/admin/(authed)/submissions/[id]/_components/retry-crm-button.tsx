@@ -6,12 +6,24 @@ import { Loader2, RefreshCw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
-export function RetryCrmButton({ submissionId }: { submissionId: string }) {
+export function RetryCrmButton({
+  submissionId,
+  alreadySynced,
+}: {
+  submissionId: string;
+  alreadySynced: boolean;
+}) {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<string | null>(null);
 
   async function onClick() {
+    if (alreadySynced) {
+      const ok = window.confirm(
+        "This submission is already synced. Force-push will create a NEW Salesforce Lead (and replace the stored Lead Id). Use this only if the existing Lead was deleted in Salesforce. Continue?",
+      );
+      if (!ok) return;
+    }
     setSubmitting(true);
     setResult(null);
     try {
@@ -50,7 +62,7 @@ export function RetryCrmButton({ submissionId }: { submissionId: string }) {
         ) : (
           <>
             <RefreshCw className="mr-1.5 h-3 w-3" />
-            Retry sync
+            {alreadySynced ? "Force resync" : "Retry sync"}
           </>
         )}
       </Button>
