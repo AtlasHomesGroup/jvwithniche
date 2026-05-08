@@ -73,32 +73,38 @@ export function buildLeadFields(submission: Submission): CrmLeadFields {
   if (auctionDate && dealType === "Foreclosure") {
     lead.Auction_Date__c = auctionDate;
   }
-  // Vacancy is collected on multiple deal types but the Salesforce
-  // Vacancy_Status__c is a *restricted* picklist. Only send when our
-  // form value matches a known valid picklist option - otherwise we
-  // get a hard 400 and the whole Lead insert fails.
-  const mapped = mapVacancyToPicklist(occupancy);
-  if (mapped) {
-    lead.Vacancy_Status__c = mapped;
-  }
+  // Vacancy + Absentee are both Yes/No restricted picklists in
+  // Salesforce. Our single form `occupancy` enum collapses into both:
+  //
+  //   form value          absentee   vacancy
+  //   ──────────────────  ─────────  ─────────
+  //   Owner-occupied      No         No
+  //   Tenant-occupied     Yes        No
+  //   Vacant              Yes        Yes
+  //   Unknown / unset     omit       omit   (CRM default --------- shows)
+  //
+  // Sending an unmapped string would 400 the whole Lead insert, so
+  // null entries are intentionally skipped instead of forced.
+  const occupancyMap = mapOccupancyToPicklists(occupancy);
+  if (occupancyMap.vacancy) lead.Vacancy_Status__c = occupancyMap.vacancy;
+  if (occupancyMap.absentee) lead.Absentee_Status__c = occupancyMap.absentee;
   return lead;
 }
 
-/**
- * Map our form's `occupancy` enum to the Salesforce Vacancy_Status__c
- * restricted picklist. The CRM picklist is a Yes/No question
- * ("Is the property vacant?"), so descriptive form values collapse
- * into Yes / No / omit.
- */
-function mapVacancyToPicklist(formValue: string): string | null {
-  if (!formValue) return null;
-  const map: Record<string, string | null> = {
-    "Owner-occupied": "No",
-    "Tenant-occupied": "No",
-    Vacant: "Yes",
-    Unknown: null, // leave the field empty when the setter doesn't know
+function mapOccupancyToPicklists(formValue: string): {
+  absentee: string | null;
+  vacancy: string | null;
+} {
+  const map: Record<
+    string,
+    { absentee: string | null; vacancy: string | null }
+  > = {
+    "Owner-occupied": { absentee: "No", vacancy: "No" },
+    "Tenant-occupied": { absentee: "Yes", vacancy: "No" },
+    Vacant: { absentee: "Yes", vacancy: "Yes" },
+    Unknown: { absentee: null, vacancy: null },
   };
-  return map[formValue] ?? null;
+  return map[formValue] ?? { absentee: null, vacancy: null };
 }
 
 /**
