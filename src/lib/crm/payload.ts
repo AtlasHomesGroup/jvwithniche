@@ -53,6 +53,7 @@ export function buildLeadFields(submission: Submission): CrmLeadFields {
 
   const dealType = str(fd, "dealType") || submission.dealType || "";
   const auctionDate = str(fd, "foreclosure_auctionDate");
+  const occupancy = str(fd, "occupancy");
 
   const lead: CrmLeadFields = {
     attributes: { type: "Lead__c" },
@@ -71,6 +72,12 @@ export function buildLeadFields(submission: Submission): CrmLeadFields {
   if (phone) lead.Phone__c = phone;
   if (auctionDate && dealType === "Foreclosure") {
     lead.Auction_Date__c = auctionDate;
+  }
+  // Vacancy is collected on multiple deal types (foreclosure, probate,
+  // pre-probate). Form values map cleanly to the CRM picklist:
+  // Owner-occupied / Vacant / Tenant-occupied / Unknown.
+  if (occupancy) {
+    lead.Vacancy_Status__c = occupancy;
   }
   return lead;
 }

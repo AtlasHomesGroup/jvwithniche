@@ -51,6 +51,7 @@ export interface CrmLeadFields {
   Status__c?: string;
   Is_Website_Data__c?: boolean;
   Auction_Date__c?: string;
+  Vacancy_Status__c?: string;
 }
 
 export interface CrmNote {
