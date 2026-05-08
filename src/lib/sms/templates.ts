@@ -81,22 +81,6 @@ export function submitterPleaseSignSms(s: Submission): string {
 }
 
 /**
- * Acknowledgement SMS sent to the setter the moment they progress past
- * screen 1 of the form. They're still mid-flow at this point — no
- * submission has been made and no contract exists yet — so the copy
- * confirms we're tracking their progress and gives them a resume link
- * in case they bail and come back later.
- */
-export function submitterFormStartedSms(s: Submission): string {
-  const fn = firstName(s);
-  return [
-    `Hi ${fn} — thanks for starting your JV submission with Niche Acquisitions. We're saving your progress as you go.`,
-    ``,
-    `Pick up where you left off here: ${siteUrl()}/submit`,
-  ].join("\n");
-}
-
-/**
  * Ops alert sent to OPS_NOTIFY_SMS the moment a setter is identifiable.
  * Carries name + phone + property so Rashad/Michael can react fast.
  */
@@ -120,19 +104,6 @@ export function opsStalledSms(s: Submission): string {
     `JV STALLED at signature:`,
     `${setterFullName(s)} (${setterPhone(s) || s.submitterPhoneE164 || "no phone"})`,
     `for ${shortProperty(s)}.`,
-    `Admin: ${adminLink(s)}`,
-  ].join(" ");
-}
-
-/**
- * Ops alert when a known setter (matched by phone) submits a NEW deal
- * after having previously signed. Their prior contract is reused, so
- * no Pandadoc round-trip needed and Michael doesn't have to counter-sign.
- */
-export function opsReturningSetterSms(s: Submission): string {
-  return [
-    `JV RETURNING setter — new deal, contract reused:`,
-    `${setterFullName(s)} for ${shortProperty(s)}.`,
     `Admin: ${adminLink(s)}`,
   ].join(" ");
 }

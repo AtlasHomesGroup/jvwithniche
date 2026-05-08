@@ -66,11 +66,10 @@ export function StepActions({
 }
 
 /**
- * Final-step CTA. The big "Generate my JV agreement" button has to be
- * impossible to miss — too many setters reach the review screen, scan
- * the summary, then close the tab without pressing the button. This
- * fixes a centered, oversized button on a backdrop-blur overlay so the
- * action is forced.
+ * Final-step CTA. Full-screen overlay with backdrop-blur, big centered
+ * button, and a small "Back to review" affordance. The setter has to
+ * either press Generate or back out of the overlay to keep editing —
+ * the button is impossible to scroll past or miss.
  */
 function GenerateOverlay({
   onBack,
@@ -86,47 +85,47 @@ function GenerateOverlay({
   label: string;
 }) {
   return (
-    <>
-      {/* Spacer so the page content doesn't sit under the fixed bar. */}
-      <div aria-hidden className="h-56" />
-      <div
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-brand-navy/10 bg-white/65 px-4 py-6 backdrop-blur-md"
-        role="region"
-        aria-label="Generate JV agreement"
-      >
-        <div className="mx-auto flex max-w-2xl flex-col items-center gap-4">
-          <p className="text-center text-[11px] font-bold uppercase tracking-[0.18em] text-brand-orange">
-            One last step
-          </p>
+    <div
+      className="fixed inset-0 z-40 flex items-center justify-center bg-white/55 px-4 backdrop-blur-md"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Generate JV agreement"
+    >
+      <div className="flex w-full max-w-md flex-col items-center gap-5 rounded-2xl border border-brand-navy/10 bg-white/95 p-6 text-center shadow-[0_24px_60px_rgba(27,58,92,0.18)] sm:p-8">
+        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-brand-orange">
+          One last step
+        </p>
+        <h2 className="text-xl font-semibold tracking-tight text-brand-navy sm:text-2xl">
+          Generate your JV agreement
+        </h2>
+        <p className="text-[13px] leading-relaxed text-brand-text-muted">
+          Pressing this creates your JV agreement and emails it to you to sign. Until you do, your submission isn’t finalized.
+        </p>
+        <Button
+          type="button"
+          onClick={onNext}
+          disabled={isSubmitting}
+          variant="accent"
+          size="lg"
+          className="h-14 w-full text-base font-semibold shadow-[0_12px_40px_rgba(232,100,10,0.35)] sm:h-16 sm:text-lg"
+        >
+          {label}
+        </Button>
+        <div className="flex w-full items-center justify-between pt-2 text-[12px] text-brand-text-muted">
           <Button
             type="button"
-            onClick={onNext}
+            variant="ghost"
+            size="sm"
+            onClick={onBack}
             disabled={isSubmitting}
-            variant="accent"
-            size="lg"
-            className="h-14 w-full max-w-md text-base font-semibold shadow-[0_12px_40px_rgba(232,100,10,0.35)] sm:h-16 sm:text-lg"
+            className="text-brand-text-muted hover:text-brand-navy"
           >
-            {label}
+            <ArrowLeft className="h-4 w-4" />
+            Edit my answers
           </Button>
-          <p className="text-center text-[12px] text-brand-text-muted">
-            Pressing this generates your JV agreement and emails it to you to sign.
-          </p>
-          <div className="flex w-full max-w-md items-center justify-between text-[12px] text-brand-text-muted">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={onBack}
-              disabled={isSubmitting}
-              className="text-brand-text-muted hover:text-brand-navy"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back to review
-            </Button>
-            <AutosaveIndicator status={autosaveStatus} />
-          </div>
+          <AutosaveIndicator status={autosaveStatus} />
         </div>
       </div>
-    </>
+    </div>
   );
 }

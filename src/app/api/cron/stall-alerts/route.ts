@@ -12,14 +12,13 @@ import {
 import {
   autoDeletedDigestEmail,
   stalledDraftEmail,
-  submitterFinishSubmissionEmail,
   submitterPleaseSignEmail,
 } from "@/lib/email/templates";
 import { isFormComplete } from "@/lib/form-complete";
+import { finalizeDraft } from "@/lib/pandadoc/finalize-draft";
 import { isConfigured as smsConfigured, sendOpsSms, sendSms } from "@/lib/sms/client";
 import {
   opsStalledSms,
-  submitterFinishSubmissionSms,
   submitterPleaseSignSms,
 } from "@/lib/sms/templates";
 
@@ -83,35 +82,49 @@ function isAuthorized(req: Request): boolean {
 async function runStalledAlerts(): Promise<Submission[]> {
   const cutoff = new Date(Date.now() - stalledThresholdMs());
 
-  // Two stall states fire the same notification once-per-submission:
-  //   1. status=awaiting_signature  (Pandadoc generated, didn't sign)
-  //   2. status=draft + form complete (didn't even press "Generate")
-  // Pull both in one query, then filter the drafts in JS to those whose
-  // formData passes full validation. The branching of message wording
-  // happens at the per-submission send call further down.
+  // Only one stall state we still alert on: someone filled the entire
+  // form but never pressed "Generate my JV agreement". The cron auto-
+  // finalizes the draft (creates the Pandadoc doc + flips status to
+  // awaiting_signature), then sends the setter a "sign your contract"
+  // email + SMS that links to /sign/<id>.
   const candidates = await db
     .select()
     .from(submissions)
     .where(
       and(
-        or(
-          eq(submissions.status, "awaiting_signature"),
-          eq(submissions.status, "draft"),
-        ),
+        eq(submissions.status, "draft"),
         lt(submissions.lastActivityAt, cutoff),
         isNull(submissions.stalledAlertSentAt),
       ),
     );
 
-  const stalled = candidates.filter(
-    (s) =>
-      s.status === "awaiting_signature" ||
-      (s.status === "draft" && isFormComplete(s.formData)),
-  );
+  const stalled = candidates.filter((s) => isFormComplete(s.formData));
+  const finalized: Submission[] = [];
 
   for (const s of stalled) {
-    // 1. Ops alert (Michael).
-    const ops = stalledDraftEmail(s);
+    // 1. Auto-finalize: create the Pandadoc doc the user never pressed
+    //    Generate on. After this, the submission is awaiting_signature
+    //    and /sign/<id> renders the embedded signing iframe.
+    const result = await finalizeDraft(s);
+    if (!result.ok || !result.submission) {
+      console.warn(
+        "[cron stall-alerts] auto-finalize failed",
+        JSON.stringify({ submissionId: s.id, error: result.error }),
+      );
+      continue;
+    }
+    const updated = result.submission;
+    finalized.push(updated);
+    console.info(
+      "[cron stall-alerts] auto-finalized stalled draft",
+      JSON.stringify({
+        submissionId: updated.id,
+        esignDocumentId: result.esignDocumentId,
+      }),
+    );
+
+    // 2. Ops alert (Michael + Rashad).
+    const ops = stalledDraftEmail(updated);
     const opsResult = await sendOpsAlert({
       subject: ops.subject,
       html: ops.html,
@@ -120,23 +133,16 @@ async function runStalledAlerts(): Promise<Submission[]> {
     if (!opsResult.sent) {
       console.warn(
         "[cron stall-alerts] ops send failed",
-        s.id,
+        updated.id,
         opsResult.reason,
       );
-      // Don't continue - we still want to try the customer email.
     }
 
-    // 2. Customer-facing email nudge - skip if no email on file.
-    // Wording differs by stage:
-    //   draft  → "you didn't press Generate, do that here"
-    //   awaiting_signature → "you didn't sign your contract, sign here"
-    const isDraftStall = s.status === "draft";
-    if (s.submitterEmail) {
-      const cust = isDraftStall
-        ? submitterFinishSubmissionEmail(s)
-        : submitterPleaseSignEmail(s);
+    // 3. Customer email — "we got your form, now please sign"
+    if (updated.submitterEmail) {
+      const cust = submitterPleaseSignEmail(updated);
       const custResult = await sendCustomerEmail({
-        to: s.submitterEmail,
+        to: updated.submitterEmail,
         subject: cust.subject,
         html: cust.html,
         text: cust.text,
@@ -144,32 +150,28 @@ async function runStalledAlerts(): Promise<Submission[]> {
       if (!custResult.sent) {
         console.warn(
           "[cron stall-alerts] customer email send failed",
-          s.id,
+          updated.id,
           custResult.reason,
         );
       }
     } else {
       console.info(
-        "[cron stall-alerts] no submitter email - email nudge skipped",
-        s.id,
+        "[cron stall-alerts] no submitter email — email nudge skipped",
+        updated.id,
       );
     }
 
-    // 3. Customer-facing SMS nudge - gated on consent + phone + Twilio
-    // configured. Best-effort, runs in parallel with the email path.
-    await maybeSendSms(s);
+    // 4. Customer SMS (consent-gated) + ops SMS.
+    await maybeSendSms(updated);
 
-    // Mark sent if anything succeeded; otherwise leave the flag null
-    // so the next cron run retries.
-    if (opsResult.sent || s.submitterEmail) {
-      await db
-        .update(submissions)
-        .set({ stalledAlertSentAt: new Date() })
-        .where(eq(submissions.id, s.id));
-    }
+    // 5. Mark sent so we don't re-fire on subsequent cron runs.
+    await db
+      .update(submissions)
+      .set({ stalledAlertSentAt: new Date() })
+      .where(eq(submissions.id, updated.id));
   }
 
-  return stalled;
+  return finalized;
 }
 
 async function runAutoDelete(): Promise<Submission[]> {
@@ -227,13 +229,9 @@ async function maybeSendSms(s: Submission): Promise<void> {
   } else if (!consent) {
     console.info("[cron stall-alerts] customer sms skipped - no consent", s.id);
   } else {
-    const body =
-      s.status === "draft"
-        ? submitterFinishSubmissionSms(s)
-        : submitterPleaseSignSms(s);
     const result = await sendSms({
       to: s.submitterPhoneE164,
-      body,
+      body: submitterPleaseSignSms(s),
     });
     if (!result.sent) {
       console.warn(

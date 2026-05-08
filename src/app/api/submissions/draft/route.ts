@@ -13,11 +13,8 @@ import {
   getOrCreateDraft,
   updateDraft,
 } from "@/lib/draft-store";
-import { isConfigured as smsConfigured, sendOpsSms, sendSms } from "@/lib/sms/client";
-import {
-  opsFormStartedSms,
-  submitterFormStartedSms,
-} from "@/lib/sms/templates";
+import { isConfigured as smsConfigured, sendOpsSms } from "@/lib/sms/client";
+import { opsFormStartedSms } from "@/lib/sms/templates";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -150,23 +147,6 @@ async function maybeFireFormStartedSms(draftId: string): Promise<void> {
   if (stamp.length === 0) return; // someone else got there first
 
   try {
-    const setterResult = await sendSms({
-      to: phone,
-      body: submitterFormStartedSms(submission),
-    });
-    if (!setterResult.sent) {
-      console.warn(
-        "[draft] setter form-started sms failed",
-        submission.id,
-        setterResult.reason,
-      );
-    } else {
-      console.info(
-        "[draft] setter form-started sms sent",
-        JSON.stringify({ submissionId: submission.id, sid: setterResult.sid }),
-      );
-    }
-
     const opsResults = await sendOpsSms(opsFormStartedSms(submission));
     for (const r of opsResults) {
       if (!r.sent) {

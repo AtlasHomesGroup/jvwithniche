@@ -18,10 +18,8 @@ import { submissions } from "@/db/schema";
 import { isConfigured, sendSms } from "@/lib/sms/client";
 import {
   opsFormStartedSms,
-  opsReturningSetterSms,
   opsSignedSms,
   opsStalledSms,
-  submitterFormStartedSms,
   submitterPleaseSignSms,
   submitterSignedSms,
 } from "@/lib/sms/templates";
@@ -43,13 +41,11 @@ async function main() {
   }
 
   const templates: Array<[string, string]> = [
-    ["submitterFormStartedSms (setter, on form start)", submitterFormStartedSms(s)],
     ["opsFormStartedSms (Rashad+Michael, on form start)", opsFormStartedSms(s)],
     ["submitterPleaseSignSms (setter, stalled)", submitterPleaseSignSms(s)],
     ["opsStalledSms (Rashad+Michael, stalled)", opsStalledSms(s)],
     ["submitterSignedSms (setter, on sign)", submitterSignedSms(s)],
     ["opsSignedSms (Rashad+Michael, on sign)", opsSignedSms(s)],
-    ["opsReturningSetterSms (Rashad+Michael, returning)", opsReturningSetterSms(s)],
   ];
 
   for (const [label, body] of templates) {

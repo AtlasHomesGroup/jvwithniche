@@ -25,11 +25,7 @@ import {
   sendOpsSms,
   sendSms,
 } from "@/lib/sms/client";
-import {
-  opsReturningSetterSms,
-  opsSignedSms,
-  submitterSignedSms,
-} from "@/lib/sms/templates";
+import { opsSignedSms, submitterSignedSms } from "@/lib/sms/templates";
 import {
   isConfigured as whatsappConfigured,
   WhapiApiError,
@@ -49,7 +45,10 @@ export async function runPostSigningSideEffects(
   const isReturning = opts.isReturning ?? false;
 
   await Promise.allSettled([
-    operatorWhatsappNotify(submission),
+    // operatorWhatsappNotify(submission),
+    // ↑ paused per ops decision (2026-05-08). Whapi is still configured;
+    //   re-enable here when ready to go back to the "5-message bundle to
+    //   bound number" workflow.
     submitterSignedEmailFanout(submission),
     submitterSignedSmsFanout(submission),
     opsSignedSmsFanout(submission, isReturning),
@@ -182,13 +181,10 @@ async function submitterSignedSmsFanout(
 
 async function opsSignedSmsFanout(
   submission: Submission,
-  isReturning: boolean,
+  _isReturning: boolean,
 ): Promise<void> {
   if (!smsConfigured()) return;
-  const body = isReturning
-    ? opsReturningSetterSms(submission)
-    : opsSignedSms(submission);
-  const results = await sendOpsSms(body);
+  const results = await sendOpsSms(opsSignedSms(submission));
   for (const r of results) {
     if (!r.sent) {
       console.warn(

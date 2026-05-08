@@ -1,4 +1,4 @@
-import { and, desc, eq, isNotNull, ne } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -7,8 +7,7 @@ import { readDraftCookie } from "@/lib/draft-cookie";
 import { findDraftByToken } from "@/lib/draft-store";
 import { verifyRecaptcha } from "@/lib/recaptcha";
 import { db } from "@/db/client";
-import { submissions, type Submission } from "@/db/schema";
-import { runPostSigningSideEffects } from "@/lib/post-sign/side-effects";
+import { submissions } from "@/db/schema";
 import {
   dealTypeSchema,
   narrativeSchema,
@@ -30,8 +29,6 @@ import {
   buildMergeTokens,
   buildRecipients,
 } from "@/lib/pandadoc/merge-fields";
-import { sendOpsAlert } from "@/lib/email/resend";
-import { opsContractReadyEmail } from "@/lib/email/templates";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -109,35 +106,6 @@ export async function POST(req: Request) {
         { error: "validation_failed", fieldErrors: errors },
         { status: 422 },
       );
-    }
-
-    // Returning-setter shortcut: if this phone already has a signed JV
-    // agreement on file, skip Pandadoc entirely. Inherit the prior
-    // signedPdfUrl, mark this submission signed-now, and forward straight
-    // to the post-sign screen (Calendly + portal CTAs). The new lead still
-    // pushes to the CRM with the existing PDF attached.
-    const setterPhone = (formData as { phoneE164?: string }).phoneE164?.trim();
-    if (setterPhone) {
-      const prior = await findPriorSignedSubmissionByPhone(
-        setterPhone,
-        draft.id,
-      );
-      if (prior) {
-        const result = await handleReturningSetter(draft.id, prior);
-        return NextResponse.json({
-          ok: true,
-          submissionId: result.id,
-          next: `/sign/${result.id}`,
-          recaptchaScore: captcha.score,
-          returningSetter: true,
-          esign: {
-            configured: true,
-            documentCreated: false,
-            error: null,
-            inheritedFrom: prior.id,
-          },
-        });
-      }
     }
 
     // Attempt to create the PandaDoc document up front so the /sign page
@@ -249,24 +217,6 @@ export async function POST(req: Request) {
       .where(eq(submissions.id, draft.id))
       .returning();
 
-    // Notify ops (Michael) that a new submission is awaiting signature.
-    // Best-effort - don't block the user response if email delivery hiccups.
-    try {
-      const { subject, html, text } = opsContractReadyEmail(updated);
-      const result = await sendOpsAlert({ subject, html, text });
-      if (!result.sent) {
-        console.warn(
-          "[submit] ops contract-ready email skipped",
-          result.reason,
-        );
-      }
-    } catch (alertErr) {
-      console.warn(
-        "[submit] ops contract-ready email failed",
-        alertErr instanceof Error ? alertErr.message : String(alertErr),
-      );
-    }
-
     return NextResponse.json({
       ok: true,
       submissionId: updated.id,
@@ -282,70 +232,4 @@ export async function POST(req: Request) {
     console.error("[submit] failed", err);
     return serverError("Failed to submit");
   }
-}
-
-/**
- * Look up the most recent SIGNED submission for a given setter phone,
- * excluding the current draft. Returns null when no prior contract
- * exists, in which case the regular Pandadoc round-trip kicks in.
- */
-async function findPriorSignedSubmissionByPhone(
-  phoneE164: string,
-  excludeSubmissionId: string,
-): Promise<Submission | null> {
-  const [prior] = await db
-    .select()
-    .from(submissions)
-    .where(
-      and(
-        eq(submissions.submitterPhoneE164, phoneE164),
-        isNotNull(submissions.signedAt),
-        isNotNull(submissions.signedPdfUrl),
-        ne(submissions.id, excludeSubmissionId),
-      ),
-    )
-    .orderBy(desc(submissions.signedAt))
-    .limit(1);
-  return prior ?? null;
-}
-
-/**
- * Inherit the prior submission's signed state into the current draft
- * (re-using the same Vercel Blob URL so the CRM push picks up the same
- * PDF), flip status forward, and fan out the post-signing side effects
- * with isReturning=true so ops messaging reflects "no counter-sign needed".
- */
-async function handleReturningSetter(
-  currentDraftId: string,
-  prior: Submission,
-): Promise<Submission> {
-  const now = new Date();
-  const [updated] = await db
-    .update(submissions)
-    .set({
-      status: "crm_sync_pending",
-      signedAt: now,
-      signedPdfUrl: prior.signedPdfUrl,
-      esignProvider: prior.esignProvider,
-      esignDocumentId: null,
-      updatedAt: now,
-      lastActivityAt: now,
-    })
-    .where(eq(submissions.id, currentDraftId))
-    .returning();
-
-  console.info(
-    "[submit] returning setter — inherited signed contract",
-    JSON.stringify({
-      currentSubmissionId: updated.id,
-      priorSubmissionId: prior.id,
-      reusedPdfUrl: prior.signedPdfUrl,
-    }),
-  );
-
-  // Fire side effects but don't block the response - the user is being
-  // redirected to the post-sign screen and the work happens server-side.
-  void runPostSigningSideEffects(updated, { isReturning: true });
-
-  return updated;
 }
