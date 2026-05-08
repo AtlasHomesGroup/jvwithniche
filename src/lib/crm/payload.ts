@@ -73,13 +73,34 @@ export function buildLeadFields(submission: Submission): CrmLeadFields {
   if (auctionDate && dealType === "Foreclosure") {
     lead.Auction_Date__c = auctionDate;
   }
-  // Vacancy is collected on multiple deal types (foreclosure, probate,
-  // pre-probate). Form values map cleanly to the CRM picklist:
-  // Owner-occupied / Vacant / Tenant-occupied / Unknown.
-  if (occupancy) {
-    lead.Vacancy_Status__c = occupancy;
+  // Vacancy is collected on multiple deal types but the Salesforce
+  // Vacancy_Status__c is a *restricted* picklist. Only send when our
+  // form value matches a known valid picklist option - otherwise we
+  // get a hard 400 and the whole Lead insert fails.
+  const mapped = mapVacancyToPicklist(occupancy);
+  if (mapped) {
+    lead.Vacancy_Status__c = mapped;
   }
   return lead;
+}
+
+/**
+ * Map our form's `occupancy` enum to the Salesforce Vacancy_Status__c
+ * restricted picklist. Returns null when no safe mapping exists - in
+ * that case we leave the field unset so the Lead insert succeeds.
+ *
+ * Update this table when the CRM team confirms the exact picklist
+ * options. Only entries with a non-null mapping get sent.
+ */
+function mapVacancyToPicklist(formValue: string): string | null {
+  if (!formValue) return null;
+  const map: Record<string, string | null> = {
+    "Owner-occupied": null,
+    "Tenant-occupied": null,
+    Vacant: null,
+    Unknown: null,
+  };
+  return map[formValue] ?? null;
 }
 
 /**
